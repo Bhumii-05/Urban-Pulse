@@ -1,0 +1,9 @@
+FastAPI 
+Uvicorn 
+OpenAI
+Pydantic 
+python-dotenv
+chromadb
+tiktoken 
+pytest
+httpx
