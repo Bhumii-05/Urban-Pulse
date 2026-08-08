@@ -3,10 +3,12 @@ from pathlib import Path
 from docx import Document
 from pypdf import PdfReader
 
+from app.rag.models import DocumentPage
+
 
 class DocumentLoader:
     """
-    Loads supported knowledge documents and extracts their text.
+    Loads supported knowledge documents and extracts their content.
 
     Supported formats:
     - PDF
@@ -20,15 +22,15 @@ class DocumentLoader:
         ".docx",
     }
 
-    def load(self, file_path: str) -> str:
+    def load(self, file_path: str) -> list[DocumentPage]:
         """
-        Load a document and return its extracted text.
+        Load a document and return page-level extracted content.
 
         Args:
             file_path: Path to the document.
 
         Returns:
-            Extracted document text.
+            List of DocumentPage objects.
 
         Raises:
             FileNotFoundError:
@@ -65,35 +67,60 @@ class DocumentLoader:
             f"Unsupported document format: {extension}"
         )
 
-    def _load_pdf(self, path: Path) -> str:
+    def _load_pdf(self, path: Path) -> list[DocumentPage]:
         """
-        Extract text from a PDF document.
+        Extract text from each PDF page separately.
         """
 
         reader = PdfReader(str(path))
 
         pages = []
 
-        for page in reader.pages:
-            text = page.extract_text()
+        for page_number, page in enumerate(
+            reader.pages,
+            start=1,
+        ):
+            text = page.extract_text() or ""
 
-            if text:
-                pages.append(text)
+            pages.append(
+                DocumentPage(
+                    page_number=page_number,
+                    text=text.strip(),
+                    metadata={
+                        "source": path.name,
+                        "file_type": "pdf",
+                    },
+                )
+            )
 
-        return "\n\n".join(pages).strip()
+        return pages
 
-    def _load_txt(self, path: Path) -> str:
+    def _load_txt(self, path: Path) -> list[DocumentPage]:
         """
-        Read text from a TXT file.
+        Read a TXT file as a single logical page.
         """
 
-        return path.read_text(
+        text = path.read_text(
             encoding="utf-8"
         ).strip()
 
-    def _load_docx(self, path: Path) -> str:
+        return [
+            DocumentPage(
+                page_number=1,
+                text=text,
+                metadata={
+                    "source": path.name,
+                    "file_type": "txt",
+                },
+            )
+        ]
+
+    def _load_docx(self, path: Path) -> list[DocumentPage]:
         """
-        Extract paragraphs from a DOCX document.
+        Extract DOCX paragraphs as a single logical page.
+
+        DOCX does not provide reliable page boundaries
+        through python-docx alone.
         """
 
         document = Document(str(path))
@@ -106,4 +133,15 @@ class DocumentLoader:
             if text:
                 paragraphs.append(text)
 
-        return "\n\n".join(paragraphs).strip()
+        text = "\n\n".join(paragraphs).strip()
+
+        return [
+            DocumentPage(
+                page_number=1,
+                text=text,
+                metadata={
+                    "source": path.name,
+                    "file_type": "docx",
+                },
+            )
+        ]
