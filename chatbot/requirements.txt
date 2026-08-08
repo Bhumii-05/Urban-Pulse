@@ -7,3 +7,6 @@ chromadb
 tiktoken 
 pytest
 httpx
+pypdf
+python-docx
+langchain-text-splitters

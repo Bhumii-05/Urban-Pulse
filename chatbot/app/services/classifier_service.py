@@ -3,20 +3,28 @@ from pydantic import ValidationError
 from app.core.exceptions import JSONParsingError
 from app.core.json_parser import JSONParser
 from app.prompts.classify_prompt import CLASSIFICATION_SYSTEM_PROMPT
-from app.providers.openai_provider import OpenAIProvider
 from app.schemas.classify import (
     ClassifyRequest,
     ClassifyResponse,
 )
 
+from app.providers.llm_provider import LLMProvider
 
 class ClassifierService:
     """
     Handles business logic for citizen message classification.
     """
 
-    def __init__(self):
-        self.provider = OpenAIProvider()
+    def __init__(
+        self,
+        provider: LLMProvider,
+    ):
+        """
+        Initialize the service with any implementation
+        of LLMProvider.
+        """
+
+        self.provider = provider
 
     def classify(
         self,

@@ -1,23 +1,27 @@
 from abc import ABC, abstractmethod
 
+
 class LLMProvider(ABC):
     """
-    Abstract base class for all LLM providers.
+    Interface for text generation providers.
 
-    Any provider(OpenAI, Anthropic, Gemini, etc.)
-    must implement the methods defined here.
+    Services that require LLM text generation
+    should depend on this abstraction rather
+    than a specific provider such as OpenAI.
     """
 
     @abstractmethod
-    def generate(self, prompt: str)-> str:
+    def generate(
+        self,
+        prompt: str,
+    ) -> str:
         """
-        Generate a response from the language model.
-        
+        Generate text from the supplied prompt.
+
         Args:
-            prompt: The prompt sent to the model.
+            prompt: Prompt sent to the language model.
 
         Returns:
-            The generated text response.
+            Generated model response.
         """
-
-        pass
+        raise NotImplementedError
