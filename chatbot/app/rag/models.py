@@ -53,3 +53,33 @@ class Chunk(BaseModel):
         default_factory=dict,
         description="Additional metadata associated with the chunk.",
     )
+
+class EmbeddedChunk(BaseModel):
+    """
+    Represents a chunk together with its embedding vector.
+    """
+
+    chunk: Chunk = Field(
+        ...,
+        description="Original chunk associated with the embedding.",
+    )
+
+    embedding: list[float] = Field(
+        ...,
+        description="Vector representation of the chunk text.",
+    )
+
+class RetrievalResult(BaseModel):
+    """
+    Represents a retrieved chunk and its relevance score.
+    """
+
+    chunk: Chunk = Field(
+        ...,
+        description="Retrieved knowledge chunk.",
+    )
+
+    score: float = Field(
+        ...,
+        description="Relevance score returned by the vector store.",
+    )
