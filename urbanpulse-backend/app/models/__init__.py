@@ -9,3 +9,4 @@ from app.models.notification import Notification
 from app.models.collection_route import CollectionRoute
 from app.models.collection_point import CollectionPoint
 from app.models.suggestion import Suggestion
+from app.models.refresh_token import RefreshToken
