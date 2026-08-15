@@ -16,6 +16,18 @@ class EmbeddingService:
     ):
         self.provider = provider
 
+    def embed(self, text: str) -> list[float]:
+        """
+        Generate an embedding vector directly for a string of text.
+        
+        Args:
+            text: Raw text to generate embedding for.
+            
+        Returns:
+            List of floats representing the embedding vector.
+        """
+        return self.provider.embed(text)
+
     def embed_chunk(
         self,
         chunk: Chunk,

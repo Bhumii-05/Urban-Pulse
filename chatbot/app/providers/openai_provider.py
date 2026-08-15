@@ -1,9 +1,8 @@
-# app/providers/openai_provider.py
 from openai import OpenAI
 
 from app.config.settings import settings
-from app.providers.llm_provider import LLMProvider
 from app.providers.embedding_provider import EmbeddingProvider
+from app.providers.llm_provider import LLMProvider
 
 
 class OpenAIProvider(
@@ -11,15 +10,11 @@ class OpenAIProvider(
     EmbeddingProvider,
 ):
     """
-    OpenAI implementation for text generation
-    and embedding generation.
+    OpenAI implementation for text generation and embedding generation.
     """
 
     def __init__(self):
-        self.client = OpenAI(
-            api_key=settings.OPENAI_API_KEY
-        )
-        # Store model names for reference
+        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
         self.embedding_model = settings.EMBEDDING_MODEL
         self.llm_model = settings.OPENAI_MODEL
 
@@ -28,13 +23,13 @@ class OpenAIProvider(
         prompt: str,
     ) -> str:
         """
-        Generate a text response using OpenAI.
+        Generate a text response using OpenAI Chat Completions.
         """
-        response = self.client.responses.create(
-            model=self.llm_model,  # Use stored model name
-            input=prompt,
+        response = self.client.chat.completions.create(
+            model=self.llm_model,
+            messages=[{"role": "user", "content": prompt}],
         )
-        return response.output_text
+        return response.choices[0].message.content
 
     def embed(
         self,
@@ -44,7 +39,7 @@ class OpenAIProvider(
         Generate an embedding vector using OpenAI.
         """
         response = self.client.embeddings.create(
-            model=self.embedding_model,  # Use stored model name
+            model=self.embedding_model,
             input=text,
         )
         return response.data[0].embedding
