@@ -61,31 +61,21 @@ class JSONParser:
 
         Returns only the JSON object.
         """
+        if not response:
+            return ""
 
         response = response.strip()
 
-        # Remove ```json
-        response = re.sub(
-            r"^```json",
-            "",
-            response,
-            flags=re.IGNORECASE,
-        )
-
-        # Remove ```
-        response = re.sub(
-            r"```$",
-            "",
-            response,
-        )
-
+        # Remove markdown block backticks regardless of flags/newlines
+        response = re.sub(r"^```[a-zA-Z]*\n?", "", response)
+        response = re.sub(r"\n?```$", "", response)
         response = response.strip()
 
-        # Extract first JSON object
+        # Locate boundaries of the JSON object
         start = response.find("{")
         end = response.rfind("}")
 
-        if start != -1 and end != -1:
+        if start != -1 and end != -1 and start < end:
             return response[start : end + 1]
 
         return response
