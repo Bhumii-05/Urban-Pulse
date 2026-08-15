@@ -17,8 +17,8 @@ from app.schemas.auth import (
     LoginRequest,
     RegisterRequest,
     TokenResponse,
-    UserResponse,
 )
+from app.schemas.user import UserResponse
 from app.services.auth_services import (
     authenticate_user,
     create_user_tokens,
