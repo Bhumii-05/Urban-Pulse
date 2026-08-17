@@ -1,61 +1,83 @@
-from app.core.json_parser import JSONParser
-from app.prompts.complaint_prompt import (
-    SYSTEM_PROMPT,
-    build_complaint_prompt,
-)
-from app.schemas.complaint import ComplaintResponse
-from app.services.llm_service import LLMService
+import json
+import re
+from typing import Any, Dict, Optional
+
+
+def parse_json_safely(raw_text: str) -> Dict[str, Any]:
+    """
+    Cleans and extracts JSON object output returned by an LLM.
+    """
+    if not raw_text or not raw_text.strip():
+        raise ValueError("LLM returned an empty response.")
+
+    text = raw_text.strip()
+
+    # Strip markdown code blocks (```json ... ```)
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.MULTILINE)
+        text = re.sub(r"\s*```$", "", text, flags=re.MULTILINE)
+        text = text.strip()
+
+    # Extract JSON substring between outer braces
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        text = match.group(0)
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"LLM returned invalid JSON: {raw_text}") from exc
 
 
 class ComplaintService:
     """
-    Service responsible for analyzing municipal complaints.
+    Service responsible for analyzing civic complaints using AI providers.
     """
 
-    def __init__(
-        self,
-        llm_service: LLMService,
-    ):
-        self.llm_service = llm_service
+    def __init__(self, provider, image_service=None):
+        self.provider = provider
+        self.image_service = image_service
 
     def analyze(
         self,
         complaint: str,
-    ) -> ComplaintResponse:
+        image_data: Optional[bytes] = None,
+        mime_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
-        Analyze a municipal complaint using the LLM.
+        Analyzes a civic complaint string and optional image payload.
         """
-        if not complaint or not complaint.strip():
-            raise ValueError("Complaint cannot be empty.")
 
-        complaint = complaint.strip()
+        prompt = f"""
+You are an expert civic complaint analysis system. Analyze the provided complaint and return a valid JSON object.
 
-        # 1. Build complaint prompt
-        user_prompt = build_complaint_prompt(
-            complaint=complaint,
-        )
+Your JSON response MUST contain the following keys:
+- "category": (string) main issue category (e.g., "illegal_dumping", "pothole", "street_light", "water_leak", etc.)
+- "severity": (string) priority level, exactly one of: "low", "medium", or "high"
+- "description": (string) a clear summary of the issue reported
+- "recommended_action": (string) concrete action steps for local municipal authorities
+- "confidence": (float) confidence score between 0.0 and 1.0
 
-        # 2. Generate LLM response
-        response = self.llm_service.generate(
-            system_prompt=SYSTEM_PROMPT,
-            user_prompt=user_prompt,
-        )
+User Complaint: {complaint}
+"""
 
-        # Print raw response for immediate terminal debugging
-        print(f"\n[DEBUG] Raw LLM Output:\n{response!r}\n")
+        if image_data and self.image_service:
+            # Process multimodal payload
+            prepared_image = self.image_service.prepare(image_data, mime_type)
+            raw_response = self.provider.generate_with_image(
+                prompt=prompt,
+                image_data=prepared_image["data"],
+                mime_type=prepared_image["mime_type"],
+            )
+        elif image_data and mime_type:
+            # Direct pass-through if image_service isn't used
+            raw_response = self.provider.generate_with_image(
+                prompt=prompt,
+                image_data=image_data,
+                mime_type=mime_type,
+            )
+        else:
+            # Text-only classification
+            raw_response = self.provider.generate(prompt)
 
-        # 3. Parse JSON response
-        try:
-            parsed_response = JSONParser.parse(response)
-        except Exception as exc:
-            raise RuntimeError(
-                f"Failed to parse complaint AI response. Raw output was: {response!r}"
-            ) from exc
-
-        # 4. Validate structured response
-        try:
-            return ComplaintResponse(**parsed_response)
-        except Exception as exc:
-            raise RuntimeError(
-                f"Invalid complaint AI response schema: {exc}. Parsed dictionary: {parsed_response}"
-            ) from exc
+        return parse_json_safely(raw_response)

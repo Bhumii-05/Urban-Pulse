@@ -1,4 +1,7 @@
 import base64
+from io import BytesIO
+
+from PIL import Image, UnidentifiedImageError
 
 
 class ImageService:
@@ -6,17 +9,18 @@ class ImageService:
     Validates and prepares images for AI vision processing.
 
     Responsibilities:
-
     1. Validate image MIME type.
     2. Validate image size.
-    3. Reject empty image data.
-    4. Convert image bytes to Base64.
+    3. Validate that the bytes contain a real image.
+    4. Validate that the detected image format is allowed.
+    5. Convert image bytes to Base64.
     """
 
     ALLOWED_MIME_TYPES = {
-        "image/jpeg",
-        "image/png",
-        "image/webp",
+        "image/jpeg": "JPEG",
+        "image/jpg": "JPEG",
+        "image/png": "PNG",
+        "image/webp": "WEBP",
     }
 
     DEFAULT_MAX_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -25,14 +29,6 @@ class ImageService:
         self,
         max_size: int = DEFAULT_MAX_SIZE,
     ):
-        """
-        Initialize ImageService.
-
-        Args:
-            max_size:
-                Maximum allowed image size in bytes.
-        """
-
         if max_size <= 0:
             raise ValueError(
                 "max_size must be greater than 0."
@@ -46,24 +42,22 @@ class ImageService:
         mime_type: str,
     ) -> None:
         """
-        Validate image data and MIME type.
-
-        Args:
-            image_data:
-                Raw image bytes.
-
-            mime_type:
-                MIME type supplied for the image.
-
-        Raises:
-            ValueError:
-                If the image is invalid or unsupported.
+        Validate image data, declared MIME type,
+        and actual image format.
         """
+
+        # ---------------------------------------------
+        # 1. Check image data
+        # ---------------------------------------------
 
         if not image_data:
             raise ValueError(
                 "Image cannot be empty."
             )
+
+        # ---------------------------------------------
+        # 2. Check MIME type
+        # ---------------------------------------------
 
         if not mime_type or not mime_type.strip():
             raise ValueError(
@@ -77,28 +71,61 @@ class ImageService:
                 f"Unsupported image type: {mime_type}"
             )
 
+        # ---------------------------------------------
+        # 3. Check file size
+        # ---------------------------------------------
+
         if len(image_data) > self.max_size:
             raise ValueError(
                 "Image exceeds the maximum allowed size."
             )
+
+        # ---------------------------------------------
+        # 4. Validate actual image bytes
+        # ---------------------------------------------
+
+        try:
+            image = Image.open(BytesIO(image_data))
+            detected_format = image.format
+
+            if detected_format not in {
+                "JPEG",
+                "PNG",
+                "WEBP",
+            }:
+                raise ValueError(
+                    "Unsupported image format."
+                )
+
+            expected_format = (
+                self.ALLOWED_MIME_TYPES[mime_type]
+            )
+
+            if detected_format != expected_format:
+                raise ValueError(
+                    "Image MIME type does not match "
+                    "the actual image format."
+                )
+
+            # Force Pillow to verify structural integrity
+            image.verify()
+
+        except UnidentifiedImageError as exc:
+            raise ValueError(
+                "Invalid or corrupted image."
+            ) from exc
+
+        except OSError as exc:
+            raise ValueError(
+                "Invalid or corrupted image."
+            ) from exc
 
     def encode(
         self,
         image_data: bytes,
     ) -> str:
         """
-        Convert image bytes to Base64.
-
-        Args:
-            image_data:
-                Raw image bytes.
-
-        Returns:
-            Base64 encoded image string.
-
-        Raises:
-            ValueError:
-                If image data is empty.
+        Convert validated image bytes to Base64.
         """
 
         if not image_data:
@@ -117,17 +144,6 @@ class ImageService:
     ) -> dict[str, str]:
         """
         Validate and prepare an image for vision processing.
-
-        Args:
-            image_data:
-                Raw image bytes.
-
-            mime_type:
-                Image MIME type.
-
-        Returns:
-            Dictionary containing the MIME type
-            and Base64 encoded image.
         """
 
         self.validate(
@@ -135,11 +151,15 @@ class ImageService:
             mime_type=mime_type,
         )
 
+        normalized_mime = mime_type.strip().lower()
+        if normalized_mime == "image/jpg":
+            normalized_mime = "image/jpeg"
+
         encoded_image = self.encode(
             image_data
         )
 
         return {
-            "mime_type": mime_type.strip().lower(),
+            "mime_type": normalized_mime,
             "data": encoded_image,
         }

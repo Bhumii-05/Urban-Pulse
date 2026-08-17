@@ -2,6 +2,7 @@ from app.providers.openai_provider import OpenAIProvider
 
 from app.services.classifier_service import ClassifierService
 from app.services.complaint_service import ComplaintService
+from app.services.image_service import ImageService
 from app.services.llm_service import LLMService
 
 from app.rag.retriever import Retriever
@@ -12,10 +13,8 @@ from app.rag.rag_service import RAGService
 
 def get_classifier_service() -> ClassifierService:
     """
-    Creates and returns a fully configured
-    ClassifierService.
+    Creates and returns a fully configured ClassifierService.
     """
-
     provider = OpenAIProvider()
 
     return ClassifierService(
@@ -23,20 +22,23 @@ def get_classifier_service() -> ClassifierService:
     )
 
 
+def get_image_service() -> ImageService:
+    """
+    Creates and returns a fully configured ImageService.
+    """
+    return ImageService()
+
+
 def get_complaint_service() -> ComplaintService:
     """
-    Creates and returns a fully configured
-    ComplaintService.
+    Creates and returns a fully configured ComplaintService.
     """
-
     provider = OpenAIProvider()
-
-    llm_service = LLMService(
-        provider=provider,
-    )
+    image_service = ImageService()
 
     return ComplaintService(
-        llm_service=llm_service,
+        provider=provider,
+        image_service=image_service,
     )
 
 
@@ -44,7 +46,6 @@ def get_rag_service() -> RAGService:
     """
     Creates and returns a fully configured RAGService.
     """
-
     provider = OpenAIProvider()
 
     vector_store = ChromaVectorStore(

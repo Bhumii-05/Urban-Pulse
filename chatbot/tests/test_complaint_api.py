@@ -1,90 +1,199 @@
 import sys
 from pathlib import Path
+import pytest
 
-# Add project root to Python path
+# Fix Python path resolution for pytest
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-import pytest
+from io import BytesIO
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
+from PIL import Image
 
-from app.api.dependencies import get_complaint_service
 from app.main import app
-from app.schemas.complaint import ComplaintResponse
+
+client = TestClient(app)
 
 
-class FakeComplaintService:
-    def analyze(self, complaint: str) -> ComplaintResponse:
-        return ComplaintResponse(
-            category="illegal_dumping",
-            severity="medium",
-            description="Waste has been dumped near a public park.",
-            recommended_action=(
-                "Municipal inspection and waste collection are recommended."
-            ),
-            confidence=0.91,
-        )
+def create_test_image(image_format="JPEG", size=(10, 10)):
+    """
+    Generates a valid image in-memory using PIL to pass header & structure
+    validations inside ImageService.
+    """
+    image = Image.new("RGB", size, color="blue")
+    buffer = BytesIO()
+    image.save(buffer, format=image_format)
+    buffer.seek(0)
+    return buffer
 
 
-@pytest.fixture
-def client():
-    app.dependency_overrides[get_complaint_service] = (
-        lambda: FakeComplaintService()
-    )
-
-    with TestClient(app) as test_client:
-        yield test_client
-
-    app.dependency_overrides.clear()
-
-
-def test_complaint_api_success(client: TestClient):
+def test_complaint_api_text_only():
     response = client.post(
         "/ai/complaint",
-        json={"complaint": "Someone dumped garbage near the public park."},
+        data={
+            "complaint": "There is garbage dumped beside the road."
+        },
     )
 
     assert response.status_code == 200
 
     data = response.json()
 
-    assert data["category"] == "illegal_dumping"
-    assert data["severity"] == "medium"
-    assert data["description"] == "Waste has been dumped near a public park."
-    assert (
-        data["recommended_action"]
-        == "Municipal inspection and waste collection are recommended."
-    )
-    assert data["confidence"] == 0.91
+    assert "category" in data
+    assert "severity" in data
+    assert "description" in data
+    assert "recommended_action" in data
+    assert "confidence" in data
+
+    assert 0.0 <= data["confidence"] <= 1.0
 
 
-def test_complaint_api_empty_complaint(client: TestClient):
+def test_complaint_api_with_image():
+    image = create_test_image("JPEG")
+
     response = client.post(
         "/ai/complaint",
-        json={"complaint": ""},
+        data={
+            "complaint": "There is garbage dumped beside the road."
+        },
+        files={
+            "image": (
+                "complaint.jpg",
+                image,
+                "image/jpeg",
+            )
+        },
     )
 
-    assert response.status_code in (400, 422)
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "category" in data
+    assert "severity" in data
+    assert "description" in data
+    assert "recommended_action" in data
+    assert "confidence" in data
+
+    assert 0.0 <= data["confidence"] <= 1.0
 
 
-def test_complaint_api_missing_complaint(client: TestClient):
+def test_complaint_api_empty_complaint():
     response = client.post(
         "/ai/complaint",
-        json={},
+        data={
+            "complaint": "   "
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Prompt cannot be empty."
+
+
+def test_complaint_api_missing_complaint():
+    response = client.post(
+        "/ai/complaint",
+        data={},
     )
 
     assert response.status_code == 422
 
 
-def test_complaint_api_confidence_range(client: TestClient):
+def test_complaint_api_unsupported_image():
+    image = create_test_image("GIF")
+
     response = client.post(
         "/ai/complaint",
-        json={"complaint": "There is garbage dumped near the road."},
+        data={
+            "complaint": "There is garbage dumped beside the road."
+        },
+        files={
+            "image": (
+                "complaint.gif",
+                image,
+                "image/gif",
+            )
+        },
+    )
+
+    assert response.status_code == 400
+    assert "Unsupported image type" in response.json()["detail"]
+
+
+def test_complaint_api_invalid_image():
+    corrupted_data = BytesIO(b"fake-jpeg-data")
+
+    response = client.post(
+        "/ai/complaint",
+        data={
+            "complaint": "There is garbage dumped beside the road."
+        },
+        files={
+            "image": (
+                "corrupted.jpg",
+                corrupted_data,
+                "image/jpeg",
+            )
+        },
+    )
+
+    assert response.status_code == 400
+    assert "Invalid or corrupted image." in response.json()["detail"]
+
+
+def test_complaint_api_oversized_image():
+    # Generate ~11 MB fake payload exceeding default 10 MB threshold
+    oversized_data = BytesIO(b"0" * (11 * 1024 * 1024))
+
+    response = client.post(
+        "/ai/complaint",
+        data={
+            "complaint": "There is garbage dumped beside the road."
+        },
+        files={
+            "image": (
+                "huge.jpg",
+                oversized_data,
+                "image/jpeg",
+            )
+        },
+    )
+
+    assert response.status_code == 400
+    assert "exceeds the maximum allowed size" in response.json()["detail"]
+
+
+def test_complaint_api_confidence_range():
+    response = client.post(
+        "/ai/complaint",
+        data={
+            "complaint": "Deep pothole on the street."
+        },
     )
 
     assert response.status_code == 200
 
     data = response.json()
+    confidence = data["confidence"]
 
-    assert 0.0 <= data["confidence"] <= 1.0
+    assert isinstance(confidence, (float, int))
+    assert 0.0 <= confidence <= 1.0
+
+
+def test_complaint_api_service_failure():
+    with patch(
+        "app.services.complaint_service.ComplaintService.analyze",
+        side_effect=RuntimeError("LLM service is unreachable."),
+    ):
+        response = client.post(
+            "/ai/complaint",
+            data={
+                "complaint": "Broken streetlight."
+            },
+        )
+
+        assert response.status_code == 502
+        assert response.json()["detail"] == "LLM service is unreachable."
