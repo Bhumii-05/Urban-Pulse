@@ -19,6 +19,7 @@ from app.models import (
     CollectionRoute,
     CollectionPoint,
     Suggestion,
+    RefreshToken,
 )
 
 
