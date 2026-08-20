@@ -219,6 +219,7 @@ __marimo__/
 
 # Node.js
 node_modules/
+**/node_modules/
 
 # Node.js logs
 npm-debug.log*
