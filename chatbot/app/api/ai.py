@@ -97,21 +97,29 @@ async def analyze_ai_complaint(
             complaint=clean_complaint,
             image_data=image_data,
             mime_type=mime_type,
+            image_filename=image.filename if image else None,
         )
     except ValueError as exc:
         raise HTTPException(
             status_code=400,
             detail=str(exc),
         ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
 
     # --------------------------------------------------------
-    # Return validated response
+    # Return validated response domain model
     # --------------------------------------------------------
 
     return ComplaintResponse(
-        category=result["category"],
-        severity=result["severity"],
-        description=result["description"],
-        recommended_action=result["recommended_action"],
-        confidence=result["confidence"],
+        id=result.id,
+        category=result.category,
+        severity=result.severity,
+        description=result.description,
+        recommended_action=result.recommended_action,
+        confidence=result.confidence,
+        status=result.status.value if hasattr(result.status, "value") else str(result.status),
     )

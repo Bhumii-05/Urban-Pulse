@@ -2,82 +2,191 @@ import json
 import re
 from typing import Any, Dict, Optional
 
-
-def parse_json_safely(raw_text: str) -> Dict[str, Any]:
-    """
-    Cleans and extracts JSON object output returned by an LLM.
-    """
-    if not raw_text or not raw_text.strip():
-        raise ValueError("LLM returned an empty response.")
-
-    text = raw_text.strip()
-
-    # Strip markdown code blocks (```json ... ```)
-    if text.startswith("```"):
-        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.MULTILINE)
-        text = re.sub(r"\s*```$", "", text, flags=re.MULTILINE)
-        text = text.strip()
-
-    # Extract JSON substring between outer braces
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        text = match.group(0)
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"LLM returned invalid JSON: {raw_text}") from exc
+from app.models.complaint import Complaint
+from app.prompts.complaint_prompt import (
+    SYSTEM_PROMPT,
+    build_complaint_prompt,
+)
+from app.providers.llm_provider import LLMProvider
+from app.repositories.complaint_repository import (
+    ComplaintRepository,
+)
+from app.services.image_service import ImageService
+from app.services.image_storage import ImageStorage
+from app.services.local_image_storage import LocalImageStorage
 
 
 class ComplaintService:
     """
-    Service responsible for analyzing civic complaints using AI providers.
+    Service responsible for analyzing and persisting complaints.
+
+    Supports:
+    1. Text-only complaints.
+    2. Complaints containing an image.
+    3. Persistence through ComplaintRepository and ImageStorage.
+
+    The service does not know about FastAPI or SQLite.
     """
 
-    def __init__(self, provider, image_service=None):
+    def __init__(
+        self,
+        provider: LLMProvider,
+        repository: ComplaintRepository,
+        image_storage: Optional[ImageStorage] = None,
+        image_service: Optional[ImageService] = None,
+    ):
         self.provider = provider
-        self.image_service = image_service
+        self.repository = repository
+        self.image_storage = (
+            image_storage
+            if image_storage is not None
+            else LocalImageStorage("data/uploads")
+        )
+        self.image_service = (
+            image_service if image_service is not None else ImageService()
+        )
 
     def analyze(
         self,
         complaint: str,
         image_data: Optional[bytes] = None,
         mime_type: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        image_filename: Optional[str] = None,
+    ) -> Complaint:
         """
-        Analyzes a civic complaint string and optional image payload.
+        Analyze and persist a municipal complaint.
         """
 
-        prompt = f"""
-You are an expert civic complaint analysis system. Analyze the provided complaint and return a valid JSON object.
+        # ---------------------------------------------
+        # 1. Validate complaint
+        # ---------------------------------------------
+        if not complaint or not complaint.strip():
+            raise ValueError("Complaint cannot be empty.")
 
-Your JSON response MUST contain the following keys:
-- "category": (string) main issue category (e.g., "illegal_dumping", "pothole", "street_light", "water_leak", etc.)
-- "severity": (string) priority level, exactly one of: "low", "medium", or "high"
-- "description": (string) a clear summary of the issue reported
-- "recommended_action": (string) concrete action steps for local municipal authorities
-- "confidence": (float) confidence score between 0.0 and 1.0
+        complaint = complaint.strip()
 
-User Complaint: {complaint}
-"""
+        # ---------------------------------------------
+        # 2. Prepare optional image
+        # ---------------------------------------------
+        prepared_image = None
 
-        if image_data and self.image_service:
-            # Process multimodal payload
-            prepared_image = self.image_service.prepare(image_data, mime_type)
-            raw_response = self.provider.generate_with_image(
+        if image_data is not None:
+            if not mime_type:
+                raise ValueError("Image MIME type is required.")
+
+            prepared_image = self.image_service.prepare(
+                image_data=image_data,
+                mime_type=mime_type,
+            )
+
+        # ---------------------------------------------
+        # 3. Build prompt
+        # ---------------------------------------------
+        prompt = build_complaint_prompt(
+            complaint=complaint,
+        )
+
+        # ---------------------------------------------
+        # 4. Generate AI response
+        # ---------------------------------------------
+        if prepared_image is not None:
+            response = self.provider.generate_with_image(
                 prompt=prompt,
                 image_data=prepared_image["data"],
                 mime_type=prepared_image["mime_type"],
             )
-        elif image_data and mime_type:
-            # Direct pass-through if image_service isn't used
-            raw_response = self.provider.generate_with_image(
-                prompt=prompt,
-                image_data=image_data,
-                mime_type=mime_type,
-            )
         else:
-            # Text-only classification
-            raw_response = self.provider.generate(prompt)
+            response = self.provider.generate(prompt)
 
-        return parse_json_safely(raw_response)
+        # ---------------------------------------------
+        # 5. Validate raw LLM response
+        # ---------------------------------------------
+        if not response or not response.strip():
+            raise RuntimeError("LLM returned an empty response.")
+
+        parsed_response = self._parse_response(response.strip())
+
+        # ---------------------------------------------
+        # 6. Create Complaint domain model
+        # ---------------------------------------------
+        complaint_model = Complaint(
+            complaint_text=complaint,
+            category=parsed_response["category"],
+            severity=parsed_response["severity"],
+            description=parsed_response["description"],
+            recommended_action=parsed_response["recommended_action"],
+            confidence=parsed_response["confidence"],
+            image_filename=image_filename,
+            image_mime_type=(
+                prepared_image["mime_type"] if prepared_image is not None else None
+            ),
+        )
+
+        # ---------------------------------------------
+        # 7. Persist image file via ImageStorage if provided
+        # ---------------------------------------------
+        if prepared_image is not None and image_filename:
+            raw_data = prepared_image["data"]
+            if isinstance(raw_data, str):
+                storage_bytes = raw_data.encode("utf-8")
+            elif isinstance(raw_data, memoryview):
+                storage_bytes = bytes(raw_data)
+            else:
+                storage_bytes = raw_data
+
+            self.image_storage.save(
+                image_data=storage_bytes,
+                filename=image_filename,
+                mime_type=prepared_image["mime_type"],
+                complaint_id=complaint_model.id,
+            )
+
+        # ---------------------------------------------
+        # 8. Persist complaint in repository
+        # ---------------------------------------------
+        persisted_complaint = self.repository.create(complaint_model)
+
+        return persisted_complaint
+
+    def _parse_response(self, response: str) -> Dict[str, Any]:
+        """
+        Safely strips markdown code fences and parses the raw LLM string into a JSON object.
+        """
+        text = response.strip()
+
+        # Strip markdown code blocks (```json ... ```) safely
+        if text.startswith("```"):
+            text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.MULTILINE)
+            text = re.sub(r"\s*```$", "", text, flags=re.MULTILINE)
+            text = text.strip()
+
+        # Extract JSON substring between outer braces if extra prose exists
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            text = match.group(0)
+
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("LLM returned invalid JSON.") from exc
+
+        if not isinstance(parsed, dict):
+            raise RuntimeError("LLM response must be a JSON object.")
+
+        required_fields = {
+            "category",
+            "severity",
+            "description",
+            "recommended_action",
+            "confidence",
+        }
+
+        missing_fields = required_fields - parsed.keys()
+
+        if missing_fields:
+            raise RuntimeError(
+                "LLM response is missing required fields: "
+                + ", ".join(sorted(missing_fields))
+            )
+
+        return parsed

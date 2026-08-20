@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.api.ai import router as ai_router
+from app.api.complaints import router as complaints_router
 from app.api.exceptions import AIServiceError
 
 app = FastAPI(
@@ -47,8 +48,8 @@ async def value_error_handler(
 
 # --- Routers & Endpoints ---
 
-# Removed complaint_router to prevent duplicate route collision
 app.include_router(ai_router)
+app.include_router(complaints_router)
 
 
 @app.get("/")

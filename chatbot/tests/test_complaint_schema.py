@@ -7,6 +7,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from pydantic import ValidationError
+from uuid import uuid4
 
 from app.schemas.complaint import (
     ComplaintRequest,
@@ -36,16 +37,20 @@ def test_complaint_request_empty():
 
 def test_complaint_response():
     response = ComplaintResponse(
+        id=uuid4(),
         category="illegal_dumping",
         severity="medium",
         description="Waste dumped in a public area.",
         recommended_action="Municipal inspection required.",
         confidence=0.91,
+        status="pending",
     )
 
     assert response.category == "illegal_dumping"
     assert response.severity == "medium"
     assert response.confidence == 0.91
+    assert response.status == "pending"
+    assert response.id is not None
 
 
 def test_complaint_confidence_validation():
