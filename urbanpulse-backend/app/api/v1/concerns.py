@@ -3,10 +3,13 @@ from sqlalchemy.orm import Session
 
 from app.dependencies.auth import get_current_user
 from app.dependencies.database import get_db
+from app.models.concern import ConcernStatus
 from app.models.user import User
 from app.schemas.concern import (
     ConcernCreate,
+    ConcernHistoryResponse,
     ConcernResponse,
+    ConcernStatusUpdate,
     ConcernUpdate,
 )
 from app.services import concern_service
@@ -160,3 +163,73 @@ def delete_concern(
     )
 
     return None
+
+
+@router.patch(
+    "/{concern_id}/status",
+    response_model=ConcernResponse,
+)
+def update_concern_status(
+    concern_id: int,
+    status_data: ConcernStatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    concern = concern_service.get_concern_by_id(
+        db=db,
+        concern_id=concern_id,
+    )
+
+    if concern is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Concern not found",
+        )
+
+    if current_user.role.value not in {"admin", "worker"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins and workers can change concern status",
+        )
+
+    updated_concern = concern_service.update_concern_status(
+        db=db,
+        concern=concern,
+        new_status=status_data.status,
+        changed_by=current_user.id,
+        remarks=status_data.remarks,
+    )
+
+    if updated_concern is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Concern is already in the requested status",
+        )
+
+    return updated_concern
+
+
+@router.get(
+    "/{concern_id}/history",
+    response_model=list[ConcernHistoryResponse],
+)
+def get_concern_history(
+    concern_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    concern = concern_service.get_concern_by_id(
+        db=db,
+        concern_id=concern_id,
+    )
+
+    if concern is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Concern not found",
+        )
+
+    return concern_service.get_concern_history(
+        db=db,
+        concern_id=concern_id,
+    )
