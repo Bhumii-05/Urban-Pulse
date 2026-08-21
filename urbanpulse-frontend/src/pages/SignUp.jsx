@@ -2,22 +2,18 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2 } from "lucide-react";
 import background from "../assets/features-background.png";
-
 import { useNavigate, Link } from "react-router-dom";
 import { authService } from "../api/auth.service";
 
 export default function SignUp() {
-  //  Navigation hook initialization
   const navigate = useNavigate();
 
-  //  state variables for holding form inputs
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // states for loading and error holding
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,13 +28,11 @@ export default function SignUp() {
         : "border-white/50"
     }`;
 
-  // Submit Handler function for Backend API call
- const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
     setError("");
 
-    // Client-side Password matching validation
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -72,21 +66,17 @@ export default function SignUp() {
 
   return (
     <div className="relative flex min-h-screen w-full items-center overflow-hidden bg-[#0a1f14]">
-      {/* Background — untouched, full viewport */}
       <img
         src={background}
-        alt="UrbanPulse eco-friendly city with a green collection truck, waste segregation bins and a sustainable skyline"
+        alt="UrbanPulse eco-friendly city"
         className="absolute inset-0 h-full w-full object-cover object-center"
         style={{ objectPosition: "center 70%" }}
       />
 
-      {/* Very subtle readability gradient — background stays clearly visible */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/15 via-transparent to-black/10 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />
 
-      {/* Content */}
       <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center gap-10 px-6 py-10 lg:flex-row lg:gap-20 lg:px-16 xl:gap-28 xl:px-24">
-        {/* Top-left logo */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -107,7 +97,6 @@ export default function SignUp() {
           </p>
         </motion.div>
 
-        {/* Floating glass sign-up card */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: [0, -12, 0] }}
@@ -122,7 +111,6 @@ export default function SignUp() {
           }}
           className="relative w-full max-w-[460px] rounded-[32px] border border-white/50 bg-white/50 p-11 shadow-[0_30px_80px_-10px_rgba(6,78,59,0.35)] backdrop-blur-2xl sm:p-14"
         >
-          {/* Soft glow behind the card for extra lift */}
           <div className="pointer-events-none absolute inset-4 -z-10 rounded-[40px] bg-white/25 blur-3xl" />
 
           <h2
@@ -138,15 +126,13 @@ export default function SignUp() {
             Join UrbanPulse and start your sustainable journey
           </p>
 
-          {/* Error message display card */}
           {error && (
             <div className="mt-3 rounded-xl border border-red-200 bg-red-500/10 px-4 py-2 text-[13px] font-medium text-red-700">
               {error}
             </div>
           )}
-          {/* changed onSubmit={handleSubmit} */}
+
           <form className="mt-7 flex flex-col gap-4" onSubmit={handleSubmit}>
-            {/* Full Name */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="fullName"
@@ -170,7 +156,6 @@ export default function SignUp() {
               </div>
             </div>
 
-            {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
@@ -195,7 +180,6 @@ export default function SignUp() {
               </div>
             </div>
 
-            {/* Phone Number */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="phone"
@@ -219,7 +203,6 @@ export default function SignUp() {
               </div>
             </div>
 
-            {/* Password */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="password"
@@ -252,7 +235,6 @@ export default function SignUp() {
               </div>
             </div>
 
-            {/* Confirm Password */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="confirmPassword"
@@ -309,7 +291,6 @@ export default function SignUp() {
             </motion.button>
           </form>
 
-          {/* Log in */}
           <p className="mt-6 text-center text-[13px] text-[#0B3D2E]/70">
             Already have an account?{" "}
             <Link

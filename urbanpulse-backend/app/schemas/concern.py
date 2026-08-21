@@ -64,7 +64,6 @@ class ConcernResponse(BaseModel):
     @field_serializer("location")
     def serialize_location(self, location):
         return to_shape(location).wkt
-    deleted_at: datetime | None
 
 
 class ConcernHistoryResponse(BaseModel):
@@ -79,3 +78,9 @@ class ConcernHistoryResponse(BaseModel):
     new_status: ConcernStatus
     remarks: str | None
     created_at: datetime
+
+
+class ConcernSupportResponse(BaseModel):
+    concern_id: int
+    support_count: int
+    supported_by_current_user: bool

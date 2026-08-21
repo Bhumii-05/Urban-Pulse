@@ -6,21 +6,17 @@ import background from "../assets/features-background.png";
 import { authService } from "../api/auth.service";
 
 export default function Login() {
-  // Navigation hook
   const navigate = useNavigate();
 
-  // Email & Password states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // UI Feedback states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
 
-  // Login & Role-based Redirection Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
@@ -29,20 +25,16 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // 1. Service login call
       const loginData = await authService.login({
         email: email.trim(),
         password: password,
       });
 
-      // 2. Token storage
       localStorage.setItem("access_token", loginData.access_token);
 
-      // 3. Service get user info call
       const userData = await authService.getCurrentUser();
       const role = userData.role?.toLowerCase();
 
-      // 4. Role redirect
       if (role === "admin") {
         navigate("/admin");
       } else if (role === "worker") {
@@ -71,21 +63,17 @@ export default function Login() {
 
   return (
     <div className="relative flex min-h-screen w-full items-center overflow-hidden bg-[#0a1f14]">
-      {/* Background — untouched, full viewport */}
       <img
         src={background}
-        alt="UrbanPulse eco-friendly city with a green collection truck, waste segregation bins and a sustainable skyline"
+        alt="UrbanPulse eco-friendly city"
         className="absolute inset-0 h-full w-full object-cover object-center"
         style={{ objectPosition: "center 70%" }}
       />
 
-      {/* Very subtle readability gradient — background stays clearly visible */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/15 via-transparent to-black/10 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />
 
-      {/* Content */}
       <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center gap-10 px-6 py-8 lg:flex-row lg:gap-20 lg:px-16 xl:gap-28 xl:px-24">
-        {/* Top-left logo */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -101,13 +89,11 @@ export default function Login() {
           >
             Urban<span className="text-[#16A34A]">Pulse</span>
           </h1>
-
           <p className="mt-1 text-xs font-medium tracking-wide text-[#14532D] drop-shadow-[0_1px_4px_rgba(255,255,255,0.5)]">
             Smart Waste Management
           </p>
         </motion.div>
 
-        {/* RIGHT — Glass login card */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: [0, -12, 0] }}
@@ -136,16 +122,13 @@ export default function Login() {
             Log in to continue your sustainable journey
           </p>
 
-          {/* Error Alert Box  */}
           {error && (
             <div className="mt-3 rounded-xl border border-red-200 bg-red-500/10 px-4 py-2 text-[13px] font-medium text-red-700">
               {error}
             </div>
           )}
 
-          {/* attached handleSubmit to onSubmit */}
           <form className="mt-7 flex flex-col gap-5" onSubmit={handleSubmit}>
-            {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
@@ -176,7 +159,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Password */}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="password"
@@ -215,7 +197,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Forgot password */}
             <div className="-mt-2 flex justify-end">
               <a
                 href="#forgot-password"
@@ -225,7 +206,6 @@ export default function Login() {
               </a>
             </div>
 
-            {/* Submit */}
             <motion.button
               type="submit"
               disabled={loading}
@@ -245,7 +225,6 @@ export default function Login() {
             </motion.button>
           </form>
 
-          {/* Sign up */}
           <p className="mt-6 text-center text-[13px] text-[#102A2A]/70">
             Don&rsquo;t have an account?{" "}
             <Link

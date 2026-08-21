@@ -1,9 +1,12 @@
 from datetime import datetime
 
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.concern import Concern, ConcernStatus
 from app.models.concern_history import ConcernHistory
+from app.models.concern_support import ConcernSupport
 from app.schemas.concern import ConcernCreate, ConcernUpdate
 
 
@@ -124,3 +127,94 @@ def get_concern_history(
         .order_by(ConcernHistory.created_at.desc())
         .all()
     )
+
+
+def get_concern_support(
+    db: Session,
+    concern_id: int,
+    user_id: int,
+):
+    support_count = (
+        db.query(func.count(ConcernSupport.id))
+        .filter(
+            ConcernSupport.concern_id == concern_id
+        )
+        .scalar()
+    )
+
+    user_support = (
+        db.query(ConcernSupport)
+        .filter(
+            ConcernSupport.concern_id == concern_id,
+            ConcernSupport.user_id == user_id,
+        )
+        .first()
+    )
+
+    return {
+        "concern_id": concern_id,
+        "support_count": support_count or 0,
+        "supported_by_current_user": user_support is not None,
+    }
+
+
+def add_concern_support(
+    db: Session,
+    concern_id: int,
+    user_id: int,
+):
+    existing_support = (
+        db.query(ConcernSupport)
+        .filter(
+            ConcernSupport.concern_id == concern_id,
+            ConcernSupport.user_id == user_id,
+        )
+        .first()
+    )
+
+    if existing_support is not None:
+        return None
+
+    support = ConcernSupport(
+        concern_id=concern_id,
+        user_id=user_id,
+    )
+
+    db.add(support)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return None
+
+    db.refresh(support)
+
+    return get_concern_support(
+        db=db,
+        concern_id=concern_id,
+        user_id=user_id,
+    )
+
+
+def remove_concern_support(
+    db: Session,
+    concern_id: int,
+    user_id: int,
+):
+    support = (
+        db.query(ConcernSupport)
+        .filter(
+            ConcernSupport.concern_id == concern_id,
+            ConcernSupport.user_id == user_id,
+        )
+        .first()
+    )
+
+    if support is None:
+        return False
+
+    db.delete(support)
+    db.commit()
+
+    return True

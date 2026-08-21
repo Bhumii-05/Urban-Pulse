@@ -8,9 +8,7 @@ const api = axios.create({
   },
 });
 
-
-//request interceptor
-
+// Request Interceptor: Injects Bearer Token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer
+from sqlalchemy import DateTime, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -10,6 +10,14 @@ from app.db.base import Base
 
 class ConcernSupport(Base):
     __tablename__ = "concern_supports"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "concern_id",
+            "user_id",
+            name="uq_concern_support_concern_user",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -36,7 +44,6 @@ class ConcernSupport(Base):
         index=True,
     )
 
-    # Relationships
     concern: Mapped["Concern"] = relationship(
         "Concern",
         back_populates="supports",

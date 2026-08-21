@@ -10,6 +10,7 @@ from app.schemas.concern import (
     ConcernHistoryResponse,
     ConcernResponse,
     ConcernStatusUpdate,
+    ConcernSupportResponse,
     ConcernUpdate,
 )
 from app.services import concern_service
@@ -232,4 +233,105 @@ def get_concern_history(
     return concern_service.get_concern_history(
         db=db,
         concern_id=concern_id,
+    )
+
+
+@router.post(
+    "/{concern_id}/support",
+    response_model=ConcernSupportResponse,
+)
+def add_concern_support(
+    concern_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    concern = concern_service.get_concern_by_id(
+        db=db,
+        concern_id=concern_id,
+    )
+
+    if concern is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Concern not found",
+        )
+
+    support = concern_service.add_concern_support(
+        db=db,
+        concern_id=concern_id,
+        user_id=current_user.id,
+    )
+
+    if support is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You have already supported this concern",
+        )
+
+    return support
+
+
+@router.delete(
+    "/{concern_id}/support",
+    response_model=ConcernSupportResponse,
+)
+def remove_concern_support(
+    concern_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    concern = concern_service.get_concern_by_id(
+        db=db,
+        concern_id=concern_id,
+    )
+
+    if concern is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Concern not found",
+        )
+
+    removed = concern_service.remove_concern_support(
+        db=db,
+        concern_id=concern_id,
+        user_id=current_user.id,
+    )
+
+    if not removed:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="You have not supported this concern",
+        )
+
+    return concern_service.get_concern_support(
+        db=db,
+        concern_id=concern_id,
+        user_id=current_user.id,
+    )
+
+
+@router.get(
+    "/{concern_id}/support",
+    response_model=ConcernSupportResponse,
+)
+def get_concern_support(
+    concern_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    concern = concern_service.get_concern_by_id(
+        db=db,
+        concern_id=concern_id,
+    )
+
+    if concern is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Concern not found",
+        )
+
+    return concern_service.get_concern_support(
+        db=db,
+        concern_id=concern_id,
+        user_id=current_user.id,
     )
