@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, Loader2 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import background from "../assets/features-background.png";
-import api from "../api/axios";
+import { authService } from "../api/auth.service";
 
 export default function Login() {
   // Navigation hook
@@ -29,21 +29,20 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // 1. Post credentials to login endpoint
-      const loginResponse = await api.post("/auth/login", {
+      // 1. Service login call
+      const loginData = await authService.login({
         email: email.trim(),
         password: password,
       });
 
-      // 2. Save Access Token to localStorage
-      const accessToken = loginResponse.data.access_token;
-      localStorage.setItem("access_token", accessToken);
+      // 2. Token storage
+      localStorage.setItem("access_token", loginData.access_token);
 
-      // 3. Calling /auth/me to get the authenticated user's role
-      const meResponse = await api.get("/auth/me");
-      const role = meResponse.data.role?.toLowerCase();
+      // 3. Service get user info call
+      const userData = await authService.getCurrentUser();
+      const role = userData.role?.toLowerCase();
 
-      // 4. Redirect dynamically based on role
+      // 4. Role redirect
       if (role === "admin") {
         navigate("/admin");
       } else if (role === "worker") {

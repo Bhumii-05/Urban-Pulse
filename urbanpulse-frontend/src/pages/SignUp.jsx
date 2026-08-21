@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2 } from "lucide-react";
-// Line 7 wala duplicate Loader2 import hata do
 import background from "../assets/features-background.png";
 
 import { useNavigate, Link } from "react-router-dom";
-import api from "../api/axios";
+import { authService } from "../api/auth.service";
 
 export default function SignUp() {
   //  Navigation hook initialization
@@ -34,7 +33,7 @@ export default function SignUp() {
     }`;
 
   // Submit Handler function for Backend API call
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
     setError("");
@@ -48,18 +47,15 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      //register endpoint call
-      await api.post("/auth/register", {
+      await authService.register({
         full_name: fullName.trim(),
         email: email.trim(),
         phone_number: phoneNumber.trim(),
         password: password,
       });
 
-      // redirect to login page after successful registration
       navigate("/login");
     } catch (err) {
-      // Backend error detail display
       if (err.response?.data?.detail) {
         setError(
           typeof err.response.data.detail === "string"
