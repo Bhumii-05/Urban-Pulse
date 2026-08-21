@@ -12,6 +12,7 @@ from app.db.base import Base
 class NotificationType(str, enum.Enum):
     CONCERN = "concern"
     ASSIGNMENT = "assignment"
+    SUGGESTION = "suggestion"
     SYSTEM = "system"
 
 

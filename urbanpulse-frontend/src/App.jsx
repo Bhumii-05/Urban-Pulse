@@ -1,41 +1,16 @@
-import Navbar from './components/Navbar.jsx'
-import Hero from './components/Hero.jsx'
-import Login from './components/Login.jsx'
-import SignUp from './components/SignUp.jsx'
-import FloatingChatbot from './components/FloatingChatbot.jsx'
-
-import background from './assets/urbanpulse-background.png'
+import { Routes, Route } from 'react-router-dom'
+import Home from './pages/Home'
+import Login from './pages/Login'
+import SignUp from './pages/SignUp'
+import CitizenDashboard from './pages/CitizenDashboard'
 
 export default function App() {
-  const path = window.location.pathname
-
-  // Login page
-  if (path === '/login') {
-    return <Login />
-  }
-
-  // Sign up page
-  if (path === '/signup') {
-    return <SignUp />
-  }
-
-  // Home page
   return (
-    <div className="min-h-screen">
-
-      <Navbar />
-
-      <main
-        className="relative bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url(${background})`,
-        }}
-      >
-        <Hero />
-      </main>
-
-      <FloatingChatbot />
-
-    </div>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
+      <Route path="/citizen" element={<CitizenDashboard />} />
+    </Routes>
   )
 }

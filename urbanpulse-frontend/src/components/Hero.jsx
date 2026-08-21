@@ -33,7 +33,7 @@ export default function Hero() {
   className="text-[12px] font-semibold tracking-wide"
   style={{ color: '#159A68' }}
 >
-  SMARTER WASTE. CLEANER FUTURE.
+  SMARTER WASTE MANAGEMENT. CLEANER CITIES.
 </span>
         </motion.div>
 
@@ -82,7 +82,7 @@ export default function Hero() {
               boxShadow: '0 8px 25px rgba(21, 154, 104, 0.25)',
             }}
           >
-            RAISE CONCERNS
+            RAISE A CONCERN
 
             <ArrowRight
               size={17}

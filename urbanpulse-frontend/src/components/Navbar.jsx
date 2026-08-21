@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Leaf, LogIn, Menu, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const LINKS = [
   { label: 'About Us', href: '#about' },
   { label: 'Features', href: '#features' },
-  
   { label: 'Contact Us', href: '#contact' },
 ]
 
@@ -23,8 +23,8 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-[1450px] items-center justify-between gap-4 rounded-xl bg-[#003D36] px-5 py-3 shadow-lg md:px-6">
 
         {/* Logo / Brand */}
-        <a
-          href="#top"
+        <Link
+          to="/"
           className="flex shrink-0 items-center gap-2.5"
         >
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#15966F]">
@@ -44,7 +44,7 @@ export default function Navbar() {
               Smart Waste Management
             </span>
           </span>
-        </a>
+        </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-6 xl:flex">
@@ -62,22 +62,22 @@ export default function Navbar() {
         {/* Right Side */}
         <div className="hidden shrink-0 items-center gap-5 lg:flex">
 
-          {/* Login */}
-          <a
-            href="/login"
+          {/* Login Link */}
+          <Link
+            to="/login"
             className="flex items-center gap-1.5 text-[13px] font-medium text-white/85 transition-colors hover:text-white"
           >
             <LogIn size={15} />
             Login
-          </a>
+          </Link>
 
-          {/* CTA */}
-          <a
-            href="/signup"
+          {/* CTA Link */}
+          <Link
+            to="/signup"
             className="rounded-lg bg-[#8FD35F] px-5 py-2.5 text-[13px] font-semibold text-[#003D36] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#A4E576] hover:shadow-md"
           >
             Join UrbanPulse
-          </a>
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -116,20 +116,22 @@ export default function Navbar() {
 
               <div className="mt-2 flex items-center gap-3 border-t border-white/10 pt-3">
 
-                <a
-                  href="/login"
+                <Link
+                  to="/login"
+                  onClick={() => setOpen(false)}
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-medium text-white/90 hover:bg-white/10"
                 >
                   <LogIn size={15} />
                   Login
-                </a>
+                </Link>
 
-                <a
-                  href="#join"
+                <Link
+                  to="/signup"
+                  onClick={() => setOpen(false)}
                   className="flex-1 rounded-lg bg-[#8FD35F] px-4 py-2.5 text-center text-sm font-semibold text-[#003D36]"
                 >
                   Join UrbanPulse
-                </a>
+                </Link>
 
               </div>
             </div>
