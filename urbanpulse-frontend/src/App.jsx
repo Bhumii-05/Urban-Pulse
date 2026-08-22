@@ -3,6 +3,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
 import CitizenDashboard from './pages/CitizenDashboard'
+import AdminDashboard from './pages/AdminDashboard'
 
 export default function App() {
   return (
@@ -11,6 +12,8 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
       <Route path="/citizen" element={<CitizenDashboard />} />
+      <Route path="/admin" element={<AdminDashboard />} />
+    
     </Routes>
   )
 }
