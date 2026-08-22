@@ -28,6 +28,13 @@ class ConcernImage(Base):
         nullable=False,
     )
 
+    cloudinary_public_id: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
     uploaded_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
@@ -35,7 +42,6 @@ class ConcernImage(Base):
         index=True,
     )
 
-    # Relationships
     concern: Mapped["Concern"] = relationship(
         "Concern",
         back_populates="images",
