@@ -24,7 +24,8 @@ def create_notification(
     )
 
     db.add(notification)
-
+    db.flush()
+    
     return notification
 
 def get_user_notifications(
