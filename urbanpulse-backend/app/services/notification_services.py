@@ -27,7 +27,6 @@ def create_notification(
 
     return notification
 
-
 def get_user_notifications(
     db: Session,
     user_id: int,
