@@ -47,6 +47,10 @@ class OpenAIProvider(
             response_format={"type": "json_object"},
             messages=[
                 {
+                    "role": "system",
+                    "content": "You are a helpful assistant. Always respond in valid JSON format.",
+                },
+                {
                     "role": "user",
                     "content": prompt.strip(),
                 }
@@ -63,14 +67,6 @@ class OpenAIProvider(
     ) -> str:
         """
         Generate a response using text and an image with JSON mode enabled.
-
-        Args:
-            prompt: Text instructions for the model.
-            image_data: Base64-encoded string OR raw binary bytes of the image.
-            mime_type: MIME type of the image (e.g., 'image/jpeg').
-
-        Returns:
-            Generated model response string.
         """
 
         if not prompt or not prompt.strip():
@@ -97,6 +93,10 @@ class OpenAIProvider(
             model=self.llm_model,
             response_format={"type": "json_object"},
             messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant. Always respond in valid JSON format.",
+                },
                 {
                     "role": "user",
                     "content": [

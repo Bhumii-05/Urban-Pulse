@@ -1,3 +1,4 @@
+import json
 from fastapi import (
     APIRouter,
     Depends,
@@ -43,9 +44,28 @@ def ask_ai(
 
     result = rag_service.answer(request.question)
 
+    raw_answer = result.get("answer", "")
+    raw_sources = result.get("sources", [])
+
+    # 1. Parse JSON string if LLM returned escaped JSON (e.g. {"answer": "..."})
+    clean_answer = raw_answer
+    if isinstance(raw_answer, str):
+        try:
+            parsed_json = json.loads(raw_answer)
+            if isinstance(parsed_json, dict) and "answer" in parsed_json:
+                clean_answer = parsed_json["answer"]
+        except (json.JSONDecodeError, TypeError):
+            clean_answer = raw_answer
+
+    # 2. Deduplicate sources while preserving order
+    unique_sources = []
+    for source in raw_sources:
+        if source not in unique_sources:
+            unique_sources.append(source)
+
     return AIAskResponse(
-        answer=result["answer"],
-        sources=result["sources"],
+        answer=clean_answer,
+        sources=unique_sources,
     )
 
 
