@@ -8,6 +8,8 @@ from app.api.v1.notifications import router as notifications_router
 from app.api.v1 import assignments
 from app.api.v1 import concern_images
 from app.api.v1 import concerns
+from app.api.v1.suggestions import citizen_router as suggestion_citizen_router
+from app.api.v1.suggestions import admin_router as suggestion_admin_router
 
 
 app = FastAPI(
@@ -65,6 +67,16 @@ app.include_router(
 
 app.include_router(
     concern_images.router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    suggestion_citizen_router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    suggestion_admin_router,
     prefix="/api/v1",
 )
 

@@ -48,6 +48,11 @@ class Suggestion(Base):
         index=True,
     )
 
+    admin_reply: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    
     reviewed_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id"),
         nullable=True,

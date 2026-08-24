@@ -4,6 +4,11 @@ from sqlalchemy.orm import Session
 from app.models.notification import Notification, NotificationType
 
 
+from sqlalchemy.orm import Session
+
+from app.models.notification import Notification, NotificationType
+
+
 def create_notification(
     db: Session,
     recipient_id: int,
@@ -20,10 +25,8 @@ def create_notification(
 
     db.add(notification)
     db.flush()
-    db.refresh(notification)
-
+    
     return notification
-
 
 def get_user_notifications(
     db: Session,
