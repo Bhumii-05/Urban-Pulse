@@ -5,6 +5,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.user import router as users_router
 from app.api.v1.profile import router as profile_router
 from app.api.v1.notifications import router as notifications_router
+from app.api.v1 import assignments
 from app.api.v1 import concern_images
 from app.api.v1 import concerns
 
@@ -64,5 +65,10 @@ app.include_router(
 
 app.include_router(
     concern_images.router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    assignments.router,
     prefix="/api/v1",
 )
