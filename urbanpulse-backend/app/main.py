@@ -6,10 +6,16 @@ from app.api.v1.user import router as users_router
 from app.api.v1.profile import router as profile_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1 import assignments
+from app.api.v1 import collection_points
+from app.api.v1 import collection_routes
 from app.api.v1 import concern_images
 from app.api.v1 import concerns
-from app.api.v1.suggestions import citizen_router as suggestion_citizen_router
-from app.api.v1.suggestions import admin_router as suggestion_admin_router
+from app.api.v1.suggestions import (
+    citizen_router as suggestion_citizen_router,
+)
+from app.api.v1.suggestions import (
+    admin_router as suggestion_admin_router,
+)
 
 
 app = FastAPI(
@@ -82,5 +88,15 @@ app.include_router(
 
 app.include_router(
     assignments.router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    collection_routes.router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    collection_points.router,
     prefix="/api/v1",
 )
