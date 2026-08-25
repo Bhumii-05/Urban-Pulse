@@ -16,7 +16,7 @@ from app.api.v1.suggestions import (
 from app.api.v1.suggestions import (
     admin_router as suggestion_admin_router,
 )
-
+from app.api.v1.dashboard import router as dashboard_router
 
 app = FastAPI(
     title="UrbanPulse API",
@@ -83,6 +83,11 @@ app.include_router(
 
 app.include_router(
     suggestion_admin_router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    dashboard_router,
     prefix="/api/v1",
 )
 
