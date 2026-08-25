@@ -20,9 +20,13 @@ import {
   LogOut,
   Settings,
   CheckCircle2,
+  Users,
+  Map,
+  MessageSquare,
 } from "lucide-react";
 import { userService } from "../api/admin.service";
 import { authService } from "../api/auth.service";
+import FloatingChatbot from "../components/FloatingChatbot";
 
 /* ------------------------------------------------------------------ */
 /*  Background image                                                   */
@@ -203,6 +207,17 @@ export default function UrbanPulseDashboard() {
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const pagedUsers = filteredUsers.slice(pageStart, pageStart + PAGE_SIZE);
+    // Analytics
+  const totalUsers = users.length;
+
+  const totalWorkers = users.filter(
+    (user) => user.role === "Worker"
+  ).length;
+
+  // These will be connected to the Concerns / Collections API later
+  const pendingConcerns = 0;
+  const resolvedConcerns = 0;
+  const todayCollections = 0;
 
   /* ---------------------------- View ---------------------------- */
   function openView(user) {
@@ -416,10 +431,147 @@ export default function UrbanPulseDashboard() {
             </div>
           </div>
         </div>
-      </header>
+            </header>
+
+      {/* Floating Navigation Cards */}
+      <section className="max-w-6xl mx-auto px-6 pt-8 pb-2 relative z-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          {/* Users */}
+          <button
+            onClick={() => {
+  document.getElementById("admin-dashboard")?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}}
+            className="group relative bg-white/90 backdrop-blur-xl rounded-2xl
+                       border border-emerald-100
+                       shadow-lg shadow-emerald-900/10
+                       px-5 py-4
+                       flex items-center gap-4
+                       text-left
+                       transition-all duration-300
+                       hover:-translate-y-1
+                       hover:shadow-xl
+                       hover:border-emerald-300"
+          >
+            <div className="w-11 h-11 rounded-xl bg-emerald-100
+                            flex items-center justify-center
+                            group-hover:bg-emerald-600
+                            transition-colors duration-300">
+              <Users className="w-5 h-5 text-emerald-700 group-hover:text-white" />
+            </div>
+
+            <div>
+              <p className="text-sm font-bold text-[#0B3D2E]">
+                Users
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Manage system users
+              </p>
+            </div>
+          </button>
+
+
+          {/* Concerns Management */}
+          <button
+            className="group relative bg-white/90 backdrop-blur-xl rounded-2xl
+                       border border-emerald-100
+                       shadow-lg shadow-emerald-900/10
+                       px-5 py-4
+                       flex items-center gap-4
+                       text-left
+                       transition-all duration-300
+                       hover:-translate-y-1
+                       hover:shadow-xl
+                       hover:border-amber-300"
+          >
+            <div className="w-11 h-11 rounded-xl bg-amber-100
+                            flex items-center justify-center
+                            group-hover:bg-amber-500
+                            transition-colors duration-300">
+              <AlertTriangle className="w-5 h-5 text-amber-600 group-hover:text-white" />
+            </div>
+
+            <div>
+              <p className="text-sm font-bold text-[#0B3D2E]">
+                Concerns
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Manage citizen reports
+              </p>
+            </div>
+          </button>
+
+
+          {/* Routes & Map */}
+          <button
+            className="group relative bg-white/90 backdrop-blur-xl rounded-2xl
+                       border border-emerald-100
+                       shadow-lg shadow-emerald-900/10
+                       px-5 py-4
+                       flex items-center gap-4
+                       text-left
+                       transition-all duration-300
+                       hover:-translate-y-1
+                       hover:shadow-xl
+                       hover:border-blue-300"
+          >
+            <div className="w-11 h-11 rounded-xl bg-blue-100
+                            flex items-center justify-center
+                            group-hover:bg-blue-600
+                            transition-colors duration-300">
+              <Map className="w-5 h-5 text-blue-600 group-hover:text-white" />
+            </div>
+
+            <div>
+              <p className="text-sm font-bold text-[#0B3D2E]">
+                Routes & Map
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                View collection routes
+              </p>
+            </div>
+          </button>
+
+
+          {/* Suggestion Review */}
+          <button
+            className="group relative bg-white/90 backdrop-blur-xl rounded-2xl
+                       border border-emerald-100
+                       shadow-lg shadow-emerald-900/10
+                       px-5 py-4
+                       flex items-center gap-4
+                       text-left
+                       transition-all duration-300
+                       hover:-translate-y-1
+                       hover:shadow-xl
+                       hover:border-purple-300"
+          >
+            <div className="w-11 h-11 rounded-xl bg-purple-100
+                            flex items-center justify-center
+                            group-hover:bg-purple-600
+                            transition-colors duration-300">
+              <MessageSquare className="w-5 h-5 text-purple-600 group-hover:text-white" />
+            </div>
+
+            <div>
+              <p className="text-sm font-bold text-[#0B3D2E]">
+                Suggestions
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Review suggestions
+              </p>
+            </div>
+          </button>
+
+        </div>
+      </section>
+
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-6 pt-20 pb-8">
+      <main className="max-w-7xl mx-auto px-6 pt-8 pb-8">
         <div className="bg-white/85 backdrop-blur-xl rounded-3xl shadow-xl ring-1 ring-white/60 border border-white/40 p-6 sm:p-8">
           {/* Title row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -620,7 +772,199 @@ export default function UrbanPulseDashboard() {
             </div>
           </div>
         </div>
-      </main>
+            </main>
+
+      {/* ================================================================ */}
+      {/* Analytics Section                                                 */}
+      {/* ================================================================ */}
+
+      <section className="max-w-7xl mx-auto px-6 pb-12">
+        <div className="mb-5 px-1 flex items-center justify-between">
+
+  {/* Left: Analytics Overview */}
+  <div className="flex items-center gap-3">
+    <div className="w-1 h-6 rounded-full bg-emerald-500"></div>
+
+    <h2 className="text-lg font-bold text-[#0B3D2E]">
+      Analytics Overview
+    </h2>
+  </div>
+
+  {/* Right: Description */}
+  <p className="text-xs sm:text-sm text-gray-400">
+    Real-time overview of system activity
+  </p>
+
+</div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+
+          {/* Total Users */}
+          <div className="group bg-white/90 backdrop-blur-xl rounded-2xl
+                          border border-emerald-100
+                          shadow-lg shadow-emerald-900/10
+                          p-5
+                          transition-all duration-300
+                          hover:-translate-y-1 hover:shadow-xl">
+
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">
+                  Total Users
+                </p>
+
+                <p className="text-3xl font-bold text-[#0B3D2E] mt-2">
+                  {totalUsers}
+                </p>
+
+                <p className="text-xs text-gray-400 mt-1">
+                  All registered users
+                </p>
+              </div>
+
+              <div className="w-11 h-11 rounded-xl bg-emerald-100
+                              flex items-center justify-center
+                              group-hover:bg-emerald-600
+                              transition-colors">
+                <Users className="w-5 h-5 text-emerald-700 group-hover:text-white" />
+              </div>
+            </div>
+          </div>
+
+
+          {/* Total Workers */}
+          <div className="group bg-white/90 backdrop-blur-xl rounded-2xl
+                          border border-blue-100
+                          shadow-lg shadow-blue-900/10
+                          p-5
+                          transition-all duration-300
+                          hover:-translate-y-1 hover:shadow-xl">
+
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">
+                  Total Workers
+                </p>
+
+                <p className="text-3xl font-bold text-[#0B3D2E] mt-2">
+                  {totalWorkers}
+                </p>
+
+                <p className="text-xs text-gray-400 mt-1">
+                  Registered workers
+                </p>
+              </div>
+
+              <div className="w-11 h-11 rounded-xl bg-blue-100
+                              flex items-center justify-center
+                              group-hover:bg-blue-600
+                              transition-colors">
+                <UserCheck className="w-5 h-5 text-blue-600 group-hover:text-white" />
+              </div>
+            </div>
+          </div>
+
+
+          {/* Pending Concerns */}
+          <div className="group bg-white/90 backdrop-blur-xl rounded-2xl
+                          border border-amber-100
+                          shadow-lg shadow-amber-900/10
+                          p-5
+                          transition-all duration-300
+                          hover:-translate-y-1 hover:shadow-xl">
+
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">
+                  Pending Concerns
+                </p>
+
+                <p className="text-3xl font-bold text-[#0B3D2E] mt-2">
+                  {pendingConcerns}
+                </p>
+
+                <p className="text-xs text-gray-400 mt-1">
+                  Need attention
+                </p>
+              </div>
+
+              <div className="w-11 h-11 rounded-xl bg-amber-100
+                              flex items-center justify-center
+                              group-hover:bg-amber-500
+                              transition-colors">
+                <AlertTriangle className="w-5 h-5 text-amber-600 group-hover:text-white" />
+              </div>
+            </div>
+          </div>
+
+
+          {/* Resolved Concerns */}
+          <div className="group bg-white/90 backdrop-blur-xl rounded-2xl
+                          border border-green-100
+                          shadow-lg shadow-green-900/10
+                          p-5
+                          transition-all duration-300
+                          hover:-translate-y-1 hover:shadow-xl">
+
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">
+                  Resolved Concerns
+                </p>
+
+                <p className="text-3xl font-bold text-[#0B3D2E] mt-2">
+                  {resolvedConcerns}
+                </p>
+
+                <p className="text-xs text-gray-400 mt-1">
+                  Successfully resolved
+                </p>
+              </div>
+
+              <div className="w-11 h-11 rounded-xl bg-green-100
+                              flex items-center justify-center
+                              group-hover:bg-green-600
+                              transition-colors">
+                <CheckCircle2 className="w-5 h-5 text-green-600 group-hover:text-white" />
+              </div>
+            </div>
+          </div>
+
+
+          {/* Today's Collections */}
+          <div className="group bg-white/90 backdrop-blur-xl rounded-2xl
+                          border border-purple-100
+                          shadow-lg shadow-purple-900/10
+                          p-5
+                          transition-all duration-300
+                          hover:-translate-y-1 hover:shadow-xl">
+
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">
+                  Today Collections
+                </p>
+
+                <p className="text-3xl font-bold text-[#0B3D2E] mt-2">
+                  {todayCollections}
+                </p>
+
+                <p className="text-xs text-gray-400 mt-1">
+                  Completed today
+                </p>
+              </div>
+
+              <div className="w-11 h-11 rounded-xl bg-purple-100
+                              flex items-center justify-center
+                              group-hover:bg-purple-600
+                              transition-colors">
+                <Map className="w-5 h-5 text-purple-600 group-hover:text-white" />
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
 
       {/* Shared soft backdrop */}
       <div
@@ -961,10 +1305,15 @@ export default function UrbanPulseDashboard() {
         )}
       </Modal>
 
-      <Toast message={toast} />
+            <Toast message={toast} />
+
+      {/* Floating AI Chatbot */}
+      <FloatingChatbot />
+
     </div>
   );
 }
+  
 
 /* ------------------------------------------------------------------ */
 /*  Shared bits                                                        */
