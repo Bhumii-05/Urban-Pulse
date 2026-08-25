@@ -304,6 +304,22 @@ def mark_collection_point_collected(
     collection_point.status = "collected"
     collection_point.collected_at = datetime.utcnow()
 
+    # SessionLocal uses autoflush=False, so explicitly flush the
+    # collection point update before checking for remaining pending points.
+    db.flush()
+
+    pending_point_exists = db.scalar(
+        select(CollectionPoint.id)
+        .where(
+            CollectionPoint.route_id == route.id,
+            CollectionPoint.status == "pending",
+        )
+        .limit(1)
+    )
+
+    if pending_point_exists is None:
+        route.status = RouteStatus.COMPLETED
+
     db.commit()
     db.refresh(collection_point)
 
