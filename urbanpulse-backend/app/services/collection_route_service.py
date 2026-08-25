@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.collection_point import CollectionPoint
 from app.models.collection_route import (
     CollectionRoute,
     RouteStatus,
@@ -126,6 +127,22 @@ def update_collection_route_status(
             f"Invalid status transition from "
             f"{current_status.value} to {new_status.value}"
         )
+
+    if new_status == RouteStatus.COMPLETED:
+        pending_point_exists = db.scalar(
+            select(CollectionPoint.id)
+            .where(
+                CollectionPoint.route_id == route.id,
+                CollectionPoint.status == "pending",
+            )
+            .limit(1)
+        )
+
+        if pending_point_exists is not None:
+            raise ValueError(
+                "Route cannot be completed while collection "
+                "points are still pending"
+            )
 
     route.status = new_status
 
