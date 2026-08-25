@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 from app.models.concern import Concern, ConcernStatus
 from app.models.concern_history import ConcernHistory
 from app.models.concern_support import ConcernSupport
+from app.models.notification import NotificationType
 from app.schemas.concern import ConcernCreate, ConcernUpdate
+from app.services.notification_services import create_notification
 
 
 def create_concern(
@@ -25,6 +27,17 @@ def create_concern(
     )
 
     db.add(concern)
+    db.flush()
+    db.refresh(concern)
+
+    create_notification(
+        db=db,
+        recipient_id=reported_by,
+        notification_type=NotificationType.CONCERN,
+        title="Concern submitted",
+        message="Your concern has been submitted successfully.",
+    )
+
     db.commit()
     db.refresh(concern)
 
@@ -108,8 +121,19 @@ def update_concern_status(
     )
 
     db.add(history)
-    db.commit()
 
+    create_notification(
+        db=db,
+        recipient_id=concern.reported_by,
+        notification_type=NotificationType.CONCERN,
+        title="Concern status updated",
+        message=(
+            f"Your concern status has been updated "
+            f"from {old_status.value} to {new_status.value}."
+        ),
+    )
+
+    db.commit()
     db.refresh(concern)
 
     return concern
