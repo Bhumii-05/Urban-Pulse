@@ -51,7 +51,20 @@ def get_mock_complaint_service():
         mock_result.status = "pending"
         return mock_result
 
+    def mock_analyze_only(complaint, image_data=None, mime_type=None):
+        if mime_type and mime_type not in ["image/jpeg", "image/png", "image/webp"]:
+            raise ValueError("Unsupported image type.")
+
+        return {
+            "category": "illegal_dumping",
+            "severity": "medium",
+            "description": "Garbage observed on street.",
+            "recommended_action": "Dispatch municipal team.",
+            "confidence": 0.95,
+        }
+
     mock_service.analyze.side_effect = mock_analyze
+    mock_service.analyze_only.side_effect = mock_analyze_only
     return mock_service
 
 
@@ -71,7 +84,7 @@ client = TestClient(app)
 
 def test_complaint_api_text_only():
     response = client.post(
-        "/ai/complaint",
+        "/api/v1/ai/complaint",
         data={"complaint": "There is garbage dumped beside the road."},
     )
 
@@ -86,11 +99,28 @@ def test_complaint_api_text_only():
     assert 0.0 <= data["confidence"] <= 1.0
 
 
+def test_complaint_api_analyze_only():
+    response = client.post(
+        "/api/v1/ai/complaint/analyze",
+        data={"complaint": "There is garbage dumped beside the road."},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "id" not in data
+    assert data["category"] == "illegal_dumping"
+    assert "severity" in data
+    assert "description" in data
+    assert "recommended_action" in data
+    assert 0.0 <= data["confidence"] <= 1.0
+
+
 def test_complaint_api_with_image():
     image_bytes = create_test_image("JPEG")
 
     response = client.post(
-        "/ai/complaint",
+        "/api/v1/ai/complaint",
         data={"complaint": "There is garbage dumped beside the road."},
         files={
             "image": (
@@ -114,7 +144,7 @@ def test_complaint_api_with_image():
 
 def test_complaint_api_empty_complaint():
     response = client.post(
-        "/ai/complaint",
+        "/api/v1/ai/complaint",
         data={"complaint": "   "},
     )
 
@@ -124,7 +154,7 @@ def test_complaint_api_empty_complaint():
 
 def test_complaint_api_missing_complaint():
     response = client.post(
-        "/ai/complaint",
+        "/api/v1/ai/complaint",
         data={},
     )
 
@@ -135,7 +165,7 @@ def test_complaint_api_unsupported_image():
     image_bytes = create_test_image("GIF")
 
     response = client.post(
-        "/ai/complaint",
+        "/api/v1/ai/complaint",
         data={"complaint": "There is garbage dumped beside the road."},
         files={
             "image": (
@@ -154,7 +184,7 @@ def test_complaint_api_invalid_image():
     corrupted_data = b"fake-jpeg-data"
 
     response = client.post(
-        "/ai/complaint",
+        "/api/v1/ai/complaint",
         data={"complaint": "There is garbage dumped beside the road."},
         files={
             "image": (
@@ -173,7 +203,7 @@ def test_complaint_api_oversized_image():
     oversized_data = b"0" * (11 * 1024 * 1024)
 
     response = client.post(
-        "/ai/complaint",
+        "/api/v1/ai/complaint",
         data={"complaint": "There is garbage dumped beside the road."},
         files={
             "image": (
@@ -190,7 +220,7 @@ def test_complaint_api_oversized_image():
 
 def test_complaint_api_confidence_range():
     response = client.post(
-        "/ai/complaint",
+        "/api/v1/ai/complaint",
         data={"complaint": "Deep pothole on the street."},
     )
 
@@ -211,7 +241,7 @@ def test_complaint_api_service_failure():
     app.dependency_overrides[get_complaint_service] = failing_service
 
     response = client.post(
-        "/ai/complaint",
+        "/api/v1/ai/complaint",
         data={"complaint": "Broken streetlight."},
     )
 

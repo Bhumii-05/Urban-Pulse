@@ -46,6 +46,31 @@ class ComplaintService:
             image_service if image_service is not None else ImageService()
         )
 
+    def create_complaint(
+        self,
+        complaint: str,
+        category: str,
+        severity: str,
+        description: str,
+        recommended_action: str,
+        confidence: float,
+        image_data: Optional[bytes] = None,
+        mime_type: Optional[str] = None,
+        image_filename: Optional[str] = None,
+    ) -> Complaint:
+        """
+        Alias/wrapper method to match what the FastAPI router calls.
+        Directly delegates to the main analyze & persist logic.
+        """
+        # If the router passes pre-calculated fields or you want 
+        # to leverage the full LLM analysis pipeline:
+        return self.analyze(
+            complaint=complaint,
+            image_data=image_data,
+            mime_type=mime_type,
+            image_filename=image_filename,
+        )
+
     def analyze(
         self,
         complaint: str,
@@ -147,6 +172,49 @@ class ComplaintService:
         persisted_complaint = self.repository.create(complaint_model)
 
         return persisted_complaint
+
+    def analyze_only(
+        self,
+        complaint: str,
+        image_data: Optional[bytes] = None,
+        mime_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Analyze a complaint without creating a database record.
+        This method is used by the complaint preview flow.
+        """
+        if not complaint or not complaint.strip():
+            raise ValueError("Complaint cannot be empty.")
+
+        complaint = complaint.strip()
+        has_image = image_data is not None
+
+        if has_image:
+            if not mime_type:
+                raise ValueError("Image MIME type is required.")
+
+            prepared_image = self.image_service.prepare(
+                image_data=image_data,
+                mime_type=mime_type,
+            )
+        else:
+            prepared_image = None
+
+        prompt = build_complaint_prompt(complaint=complaint)
+
+        if prepared_image is not None:
+            response = self.provider.generate_with_image(
+                prompt=prompt,
+                image_data=prepared_image["data"],
+                mime_type=prepared_image["mime_type"],
+            )
+        else:
+            response = self.provider.generate(prompt)
+
+        if not response or not response.strip():
+            raise RuntimeError("LLM returned an empty response.")
+
+        return self._parse_response(response.strip())
 
     def _parse_response(self, response: str) -> Dict[str, Any]:
         """

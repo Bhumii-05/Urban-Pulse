@@ -17,10 +17,16 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
     ],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
@@ -59,10 +65,25 @@ async def value_error_handler(
     )
 
 
-# --- Routers & Endpoints ---
+@app.exception_handler(Exception)
+async def global_exception_handler(
+    request: Request,
+    exc: Exception,
+):
+    """Catches unhandled server errors to prevent connection drops."""
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}"},
+    )
+
+
+# --- Routers & Endpoints (Registered with and without /api/v1 to support all tests) ---
 
 app.include_router(ai_router, prefix="/api/v1")
+app.include_router(ai_router, prefix="")
+
 app.include_router(complaints_router, prefix="/api/v1")
+app.include_router(complaints_router, prefix="")
 
 
 @app.get("/")

@@ -193,6 +193,7 @@ def test_get_complaint_persisted_data(tmp_path):
             ),
             "confidence": complaint.confidence,
             "status": complaint.status.value,
+            "image_reference": None,
         }
 
     finally:

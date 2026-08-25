@@ -53,7 +53,7 @@ client = TestClient(app)
 
 def test_ai_ask_success():
     response = client.post(
-        "/ai/ask",
+        "/api/v1/ai/ask",
         json={
             "question": "How should dry recyclable waste be disposed of?"
         },
@@ -79,7 +79,7 @@ def test_ai_ask_success():
 
 def test_ai_ask_empty_question():
     response = client.post(
-        "/ai/ask",
+        "/api/v1/ai/ask",
         json={
             "question": ""
         },
@@ -90,7 +90,7 @@ def test_ai_ask_empty_question():
 
 def test_ai_ask_missing_question():
     response = client.post(
-        "/ai/ask",
+        "/api/v1/ai/ask",
         json={},
     )
 
@@ -103,7 +103,7 @@ def test_ai_ask_ai_service_failure():
     ] = override_failing_rag_service
 
     response = client.post(
-        "/ai/ask",
+        "/api/v1/ai/ask",
         json={
             "question": "How should waste be disposed of?"
         },

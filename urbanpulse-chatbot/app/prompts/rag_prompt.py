@@ -48,3 +48,14 @@ User Question:
 
 Answer the user's question using only the context above.
 """.strip()
+
+
+class RAGPromptBuilder:
+    """
+    Compatibility wrapper class for tests expecting RAGPromptBuilder.
+    """
+    SYSTEM_PROMPT = SYSTEM_PROMPT
+
+    @staticmethod
+    def build(question: str, context: str) -> str:
+        return build_rag_prompt(question=question, context=context)

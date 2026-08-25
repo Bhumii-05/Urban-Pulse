@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 
-
 # Fix Python path resolution for pytest
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -9,8 +8,8 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from fastapi.testclient import TestClient
 
-from app.api.dependencies import get_complaint_repository
 from app.main import app
+from app.api.dependencies import get_complaint_repository
 from app.models.complaint import Complaint
 from app.repositories.sqlite_complaint_repository import (
     SQLiteComplaintRepository,
@@ -51,9 +50,7 @@ def test_list_complaints_empty(tmp_path):
     client = TestClient(app)
 
     try:
-        response = client.get(
-            "/complaints"
-        )
+        response = client.get("/api/v1/complaints")
 
         assert response.status_code == 200
 
@@ -87,9 +84,7 @@ def test_list_one_complaint(tmp_path):
     client = TestClient(app)
 
     try:
-        response = client.get(
-            "/complaints"
-        )
+        response = client.get("/api/v1/complaints")
 
         assert response.status_code == 200
 
@@ -144,9 +139,7 @@ def test_list_multiple_complaints(tmp_path):
     client = TestClient(app)
 
     try:
-        response = client.get(
-            "/complaints"
-        )
+        response = client.get("/api/v1/complaints")
 
         assert response.status_code == 200
 
@@ -196,9 +189,7 @@ def test_list_preserves_persisted_fields(tmp_path):
     client = TestClient(app)
 
     try:
-        response = client.get(
-            "/complaints"
-        )
+        response = client.get("/api/v1/complaints")
 
         assert response.status_code == 200
 

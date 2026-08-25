@@ -1,3 +1,4 @@
+from typing import Any, Optional
 from app.prompts.rag_prompt import (
     SYSTEM_PROMPT,
     build_rag_prompt,
@@ -28,13 +29,16 @@ class RAGService:
 
     def __init__(
         self,
-        retriever: Retriever,
-        context_builder: ContextBuilder,
-        llm_service: LLMService,
+        retriever: Optional[Retriever] = None,
+        context_builder: Optional[ContextBuilder] = None,
+        llm_service: Optional[LLMService] = None,
+        prompt_builder: Any = None,
+        **kwargs: Any,
     ):
         self.retriever = retriever
         self.context_builder = context_builder
         self.llm_service = llm_service
+        self.prompt_builder = prompt_builder
 
     def answer(
         self,
@@ -102,10 +106,16 @@ class RAGService:
         # 4. Build RAG prompt
         # ---------------------------------------------
 
-        user_prompt = build_rag_prompt(
-            question=question,
-            context=built_context.text,
-        )
+        if self.prompt_builder and hasattr(self.prompt_builder, "build"):
+            user_prompt = self.prompt_builder.build(
+                question=question,
+                context=built_context.text,
+            )
+        else:
+            user_prompt = build_rag_prompt(
+                question=question,
+                context=built_context.text,
+            )
 
         # ---------------------------------------------
         # 5. Generate LLM answer
@@ -124,3 +134,12 @@ class RAGService:
             "answer": answer,
             "sources": built_context.sources,
         }
+
+    def ask(
+        self,
+        question: str,
+    ) -> dict:
+        """
+        Alias for answer() method to support tests calling ask().
+        """
+        return self.answer(question)
