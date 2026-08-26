@@ -258,3 +258,30 @@ class ComplaintService:
             )
 
         return parsed
+
+    def create(
+        self,
+        complaint: str,
+        category: str,
+        severity: str,
+        description: str,
+        recommended_action: str,
+        confidence: float,
+        image_data: Optional[bytes] = None,
+        mime_type: Optional[str] = None,
+        image_filename: Optional[str] = None,
+    ) -> Complaint:
+        """
+        Alias for create_complaint to support router calls using .create()
+        """
+        return self.create_complaint(
+            complaint=complaint,
+            category=category,
+            severity=severity,
+            description=description,
+            recommended_action=recommended_action,
+            confidence=confidence,
+            image_data=image_data,
+            mime_type=mime_type,
+            image_filename=image_filename,
+        )
