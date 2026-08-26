@@ -16,3 +16,33 @@ class WorkerAnalyticsResponse(BaseModel):
     total_assignments: int
     completed_assignments: int
     pending_assignments: int
+
+
+class ConcernStatusAnalyticsResponse(BaseModel):
+    status: str
+    count: int
+
+
+class ConcernCategoryAnalyticsResponse(BaseModel):
+    category: str
+    count: int
+
+
+class ConcernPriorityAnalyticsResponse(BaseModel):
+    priority: str
+    count: int
+
+
+class RouteStatusAnalyticsResponse(BaseModel):
+    status: str
+    count: int
+
+
+class CollectionPointAnalyticsResponse(BaseModel):
+    status: str
+    count: int
+
+
+class WasteBinStatusAnalyticsResponse(BaseModel):
+    status: str
+    count: int
