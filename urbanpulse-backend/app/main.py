@@ -21,7 +21,7 @@ from app.api.v1.suggestions import (
 from app.api.v1.dashboard import (
     router as dashboard_router,
 )
-
+from app.api.v1 import analytics
 
 app = FastAPI(
     title="UrbanPulse API",
@@ -133,5 +133,11 @@ app.include_router(
 
 app.include_router(
     maps.router,
+    prefix="/api/v1",
+)
+
+
+app.include_router(
+    analytics.router,
     prefix="/api/v1",
 )
