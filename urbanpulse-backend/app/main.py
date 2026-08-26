@@ -11,13 +11,16 @@ from app.api.v1 import collection_routes
 from app.api.v1 import concern_images
 from app.api.v1 import concerns
 from app.api.v1 import waste_bins
+from app.api.v1 import maps
 from app.api.v1.suggestions import (
     citizen_router as suggestion_citizen_router,
 )
 from app.api.v1.suggestions import (
     admin_router as suggestion_admin_router,
 )
-from app.api.v1.dashboard import router as dashboard_router
+from app.api.v1.dashboard import (
+    router as dashboard_router,
+)
 from app.api.v1 import analytics
 
 app = FastAPI(
@@ -103,6 +106,7 @@ app.include_router(
     prefix="/api/v1",
 )
 
+
 app.include_router(
     assignments.router,
     prefix="/api/v1",
@@ -120,10 +124,18 @@ app.include_router(
     prefix="/api/v1",
 )
 
+
 app.include_router(
     waste_bins.router,
     prefix="/api/v1",
 )
+
+
+app.include_router(
+    maps.router,
+    prefix="/api/v1",
+)
+
 
 app.include_router(
     analytics.router,
