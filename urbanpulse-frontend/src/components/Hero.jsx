@@ -76,8 +76,8 @@ export default function Hero() {
           className="mt-8 flex flex-col items-center gap-5"
         >
           {/* Explore Features */}
-          <button
-            onClick={() => navigate('/report-concern')}
+          <a
+            
             className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-1"
             style={{
               backgroundColor: '#159A68',
@@ -90,7 +90,7 @@ export default function Hero() {
               size={17}
               className="transition-transform duration-200 group-hover:translate-x-1"
             />
-          </button>
+          </a>
 
           {/* Phone */}
           <a

@@ -41,14 +41,14 @@ export default function EvidenceUploader({ file, previewUrl, onFileSelect, onRem
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           className={`flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
-            dragOver ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-slate-50/60'
+            dragOver ? 'border-[#005B4F] bg-[#E6F4F1]' : 'border-slate-200 bg-slate-50/60'
           }`}
         >
           <p className="text-sm text-slate-500">Drag &amp; drop image here or take a photo</p>
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#0B3D2E] px-4 py-2 text-sm font-medium text-white hover:bg-[#0F4D3A]"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#005B4F] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#00473e]"
           >
             <Camera className="h-4 w-4" aria-hidden="true" />
             Camera / Upload
