@@ -186,7 +186,7 @@ export default function ReportConcern() {
               {/* Assumes the existing /citizen dashboard route — update if yours differs. */}
               <Link
                 to="/citizen"
-                className="flex-1 rounded-xl bg-[#0B3D2E] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#0F4D3A]"
+                className="flex-1 rounded-xl bg-[#005B4F] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#00473e]"
               >
                 Back to Dashboard
               </Link>
@@ -322,7 +322,7 @@ export default function ReportConcern() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B3D2E] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-[#0F4D3A] disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#005B4F] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-[#00473e] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {submitLabel}

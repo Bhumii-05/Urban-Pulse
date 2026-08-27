@@ -27,6 +27,7 @@ import {
 import { userService } from "../api/admin.service";
 import { authService } from "../api/auth.service";
 import FloatingChatbot from "../components/FloatingChatbot";
+import { useNavigate } from 'react-router-dom'
 
 /* ------------------------------------------------------------------ */
 /*  Background image                                                   */
@@ -116,6 +117,7 @@ function Toast({ message }) {
 /*  Main component                                                     */
 /* ------------------------------------------------------------------ */
 export default function UrbanPulseDashboard() {
+  const navigate = useNavigate()
   const [users, setUsers] = useState([]);
   const [adminUser, setAdminUser] = useState({ name: "Admin", role: "Admin" });
 
@@ -412,9 +414,15 @@ export default function UrbanPulseDashboard() {
               </button>
               {profileOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden animate-scaleIn origin-top-right">
-                  <button onClick={() => setProfileOpen(false)} className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors">
-                    <UserIcon className="w-4 h-4" /> Profile
-                  </button>
+                  <button 
+  onClick={() => {
+    setProfileOpen(false)
+    navigate('/profile')
+  }} 
+  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+>
+  <UserIcon className="w-4 h-4" /> Profile
+</button>
                   <button onClick={() => setProfileOpen(false)} className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors">
                     <Settings className="w-4 h-4" /> Settings
                   </button>

@@ -33,7 +33,7 @@ export const citizenService = {
    * HTTP POST /api/v1/collections-points
    */
   createSuggestion: async (data) => {
-    const response = await api.post('/collections-points', {
+    const response = await api.post('/collection-points', {
       route_id: data.route_id ?? 0,
       waste_bin_id: data.waste_bin_id || crypto.randomUUID(),
       latitude: data.latitude,
