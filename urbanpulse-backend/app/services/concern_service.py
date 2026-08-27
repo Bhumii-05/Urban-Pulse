@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -10,6 +11,7 @@ from app.models.concern_support import ConcernSupport
 from app.models.notification import NotificationType
 from app.schemas.concern import ConcernCreate, ConcernUpdate
 from app.services.notification_services import create_notification
+from app.utils.geo_utils import create_point, parse_location
 
 
 def create_concern(
@@ -17,11 +19,26 @@ def create_concern(
     concern_data: ConcernCreate,
     reported_by: int,
 ):
+    try:
+        latitude, longitude = parse_location(
+            concern_data.location
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
+
+    location_point = create_point(
+        latitude=latitude,
+        longitude=longitude,
+    )
+
     concern = Concern(
         reported_by=reported_by,
         category=concern_data.category,
         description=concern_data.description,
-        location=concern_data.location,
+        location=location_point,
         priority=concern_data.priority,
         status=ConcernStatus.OPEN,
     )
@@ -75,6 +92,22 @@ def update_concern(
     update_data = concern_data.model_dump(
         exclude_unset=True
     )
+
+    if "location" in update_data:
+        try:
+            latitude, longitude = parse_location(
+                update_data["location"]
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            )
+
+        update_data["location"] = create_point(
+            latitude=latitude,
+            longitude=longitude,
+        )
 
     for field, value in update_data.items():
         setattr(concern, field, value)
