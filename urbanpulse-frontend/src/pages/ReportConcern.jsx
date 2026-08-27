@@ -7,6 +7,8 @@ import LocationStatus from '../components/report-concern/LocationStatus'
 import EvidenceUploader from '../components/report-concern/EvidenceUploader'
 import { useGeolocation } from '../api/useGeolocation'
 import { concernService } from '../api/concern.service'
+import FloatingChatbot from "../components/FloatingChatbot";
+
 import {
   CONCERN_CATEGORIES,
   PRIORITY_LEVELS,
@@ -198,73 +200,7 @@ export default function ReportConcern() {
   return (
   <div className="relative min-h-screen overflow-hidden bg-[#EAF7F0]">
 
-    {/* Navbar */}
-    <nav className="relative z-50 mx-4 mt-3 rounded-2xl bg-[#004D40] px-6 py-3 shadow-lg sm:mx-8 lg:mx-8">
-      <div className="mx-auto flex max-w-[1800px] items-center justify-between">
-
-        {/* Logo + Brand */}
-    <Link to="/" className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0FA968]">
-        <Sprout className="h-6 w-6 text-white" />
-      </div>
-
-      <div className="leading-none">
-        <div className="text-[20px] font-bold text-white">
-          Urban<span className="text-[#0FA968]">Pulse</span>
-        </div>
-
-        <div className="mt-1 text-[11px] font-medium text-white/75">
-          Smart Waste Management
-        </div>
-      </div>
-    </Link>
-
-
-        {/* Navigation Links */}
-        <div className="hidden items-center gap-8 md:flex">
-          <Link
-            to="/about"
-            className="text-sm font-medium text-white/90 transition hover:text-[#9BE15D]"
-          >
-            About Us
-          </Link>
-
-          <Link
-            to="/features"
-            className="text-sm font-medium text-white/90 transition hover:text-[#9BE15D]"
-          >
-            Features
-          </Link>
-
-          <Link
-            to="/contact"
-            className="text-sm font-medium text-white/90 transition hover:text-[#9BE15D]"
-          >
-            Home
-          </Link>
-          <Link
-            to="/contact"
-            className="text-sm font-medium text-white/90 transition hover:text-[#9BE15D]"
-          >
-            Contact Us
-          </Link>
-        </div>
-
-        {/* Right Buttons */}
-        <div className="flex items-center gap-3">
-
-          
-
-          <Link
-            to="/login"
-            className="rounded-xl bg-[#91D65B] px-5 py-2.5 text-sm font-semibold text-[#063D32] transition hover:bg-[#A5E66E]"
-          >
-            Log In
-          </Link>
-
-        </div>
-      </div>
-    </nav>
+    
 
     {/* Report Concern Content */}
     <main className="relative mx-auto max-w-3xl px-4 py-12">
@@ -396,6 +332,8 @@ export default function ReportConcern() {
           </button>
         </form>
       </main>
+      {/* Floating AI Chatbot */}
+            <FloatingChatbot />
     </div>
   )
 }
