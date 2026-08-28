@@ -5,23 +5,17 @@ from sqlalchemy import cast, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models.concern import (
-    Concern,
-    ConcernStatus,
-)
+from app.models.concern import Concern, ConcernStatus
 from app.models.concern_history import ConcernHistory
 from app.models.concern_support import ConcernSupport
 from app.models.notification import NotificationType
-from app.schemas.concern import (
-    ConcernCreate,
-    ConcernUpdate,
-)
-from app.services.notification_services import (
-    create_notification,
-)
+from app.schemas.concern import ConcernCreate, ConcernUpdate
+from app.services.notification_services import create_notification
 from app.utils.geo_utils import create_point, parse_location
 
+
 DUPLICATE_RADIUS_METERS = 50.0
+
 
 def find_nearby_duplicate(
     db: Session,
@@ -160,11 +154,17 @@ def create_concern(
     }
 
 
-def get_concerns(db: Session):
+def get_concerns(
+    db: Session,
+):
     return (
         db.query(Concern)
-        .filter(Concern.is_deleted.is_(False))
-        .order_by(Concern.created_at.desc())
+        .filter(
+            Concern.is_deleted.is_(False)
+        )
+        .order_by(
+            Concern.created_at.desc()
+        )
         .all()
     )
 
@@ -208,13 +208,12 @@ def update_concern(
     for field, value in update_data.items():
         setattr(concern, field, value)
 
-    concern.updated_at = datetime.utcnow()
+    concern.updated_at = datetime.now(timezone.utc)
 
     db.commit()
     db.refresh(concern)
 
     return concern
-
 
 def delete_concern(
     db: Session,
@@ -258,8 +257,7 @@ def update_concern_status(
         title="Concern status updated",
         message=(
             f"Your concern status has been updated "
-            f"from {old_status.value} "
-            f"to {new_status.value}."
+            f"from {old_status.value} to {new_status.value}."
         ),
     )
 
@@ -267,7 +265,6 @@ def update_concern_status(
     db.refresh(concern)
 
     return concern
-
 
 
 def get_concern_history(
@@ -279,7 +276,9 @@ def get_concern_history(
         .filter(
             ConcernHistory.concern_id == concern_id
         )
-        .order_by(ConcernHistory.created_at.desc())
+        .order_by(
+            ConcernHistory.created_at.desc()
+        )
         .all()
     )
 
@@ -290,7 +289,9 @@ def get_concern_support(
     user_id: int,
 ):
     support_count = (
-        db.query(func.count(ConcernSupport.id))
+        db.query(
+            func.count(ConcernSupport.id)
+        )
         .filter(
             ConcernSupport.concern_id == concern_id
         )
@@ -309,7 +310,9 @@ def get_concern_support(
     return {
         "concern_id": concern_id,
         "support_count": support_count or 0,
-        "supported_by_current_user": user_support is not None,
+        "supported_by_current_user": (
+            user_support is not None
+        ),
     }
 
 
@@ -339,10 +342,11 @@ def add_concern_support(
 
     try:
         db.commit()
-
     except IntegrityError:
         db.rollback()
         return None
+
+    db.refresh(support)
 
     return get_concern_support(
         db=db,
