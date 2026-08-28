@@ -20,6 +20,9 @@ def create_suggestion(
         submitted_by=user.id,
         title=suggestion_data.title,
         description=suggestion_data.description,
+        suggestion_type=suggestion_data.suggestion_type,
+        latitude=suggestion_data.latitude,
+        longitude=suggestion_data.longitude,
         status=SuggestionStatus.PENDING,
     )
 
