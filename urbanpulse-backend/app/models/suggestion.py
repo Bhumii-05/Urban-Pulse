@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -14,6 +14,13 @@ class SuggestionStatus(str, enum.Enum):
     REVIEWED = "reviewed"
     ACCEPTED = "accepted"
     REJECTED = "rejected"
+
+
+class SuggestionType(str, enum.Enum):
+    GENERAL = "general"
+    WASTE_PICKUP = "waste_pickup"
+    ADD_BIN = "add_bin"
+    OTHER = "other"
 
 
 class Suggestion(Base):
@@ -41,6 +48,23 @@ class Suggestion(Base):
         nullable=False,
     )
 
+    suggestion_type: Mapped[SuggestionType] = mapped_column(
+        Enum(SuggestionType),
+        default=SuggestionType.GENERAL,
+        nullable=False,
+        index=True,
+    )
+
+    latitude: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
+    longitude: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
     status: Mapped[SuggestionStatus] = mapped_column(
         Enum(SuggestionStatus),
         default=SuggestionStatus.PENDING,
@@ -52,7 +76,7 @@ class Suggestion(Base):
         Text,
         nullable=True,
     )
-    
+
     reviewed_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id"),
         nullable=True,
