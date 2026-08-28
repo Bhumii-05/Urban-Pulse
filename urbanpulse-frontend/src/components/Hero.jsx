@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, Phone } from 'lucide-react'
 import background from '../assets/urbanpulse-background.png'
+import { useNavigate } from 'react-router-dom'
 
 export default function Hero() {
+  const navigate = useNavigate()
   return (
     <section
       id="top"
@@ -75,7 +77,7 @@ export default function Hero() {
         >
           {/* Explore Features */}
           <a
-            href="#features"
+            
             className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-1"
             style={{
               backgroundColor: '#159A68',
