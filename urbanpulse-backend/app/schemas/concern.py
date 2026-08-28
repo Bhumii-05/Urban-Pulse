@@ -1,9 +1,28 @@
 from datetime import datetime
 
 from geoalchemy2.shape import to_shape
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+)
 
-from app.models.concern import ConcernPriority, ConcernStatus
+from app.models.concern import (
+    ConcernPriority,
+    ConcernStatus,
+)
+
+class ConcernLocation(BaseModel):
+    latitude: float = Field(
+        ge=-90,
+        le=90,
+    )
+
+    longitude: float = Field(
+        ge=-180,
+        le=180,
+    )
 
 
 class ConcernCreate(BaseModel):
@@ -16,7 +35,8 @@ class ConcernCreate(BaseModel):
         min_length=1,
     )
 
-    location: object
+    location: ConcernLocation
+
 
     priority: ConcernPriority = ConcernPriority.MEDIUM
 
@@ -33,7 +53,7 @@ class ConcernUpdate(BaseModel):
         min_length=1,
     )
 
-    location: object | None = None
+    location: ConcernLocation | None = None
 
     priority: ConcernPriority | None = None
 
@@ -63,7 +83,33 @@ class ConcernResponse(BaseModel):
 
     @field_serializer("location")
     def serialize_location(self, location):
-        return to_shape(location).wkt
+        if location is None:
+            return None
+
+        shape = to_shape(location)
+
+        return {
+            "latitude": shape.y,
+            "longitude": shape.x,
+        }
+
+
+class NearbyConcernResponse(BaseModel):
+    id: int
+    category: str
+    description: str
+    location: ConcernLocation
+    status: ConcernStatus
+    priority: ConcernPriority
+    distance_meters: float
+    support_count: int
+
+
+class ConcernCreateResponse(BaseModel):
+    created: bool
+    message: str
+    concern: ConcernResponse | None = None
+    nearby_concern: NearbyConcernResponse | None = None
 
 
 class ConcernHistoryResponse(BaseModel):

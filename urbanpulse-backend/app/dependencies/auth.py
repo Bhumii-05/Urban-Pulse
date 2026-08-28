@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from jose import JWTError
 from app.core.security import decode_access_token
-from app.db.session import SessionLocal
+
 from app.models.user import User
 from app.dependencies.database import get_db
 
