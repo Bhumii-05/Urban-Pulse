@@ -29,17 +29,11 @@ export const citizenService = {
   },
 
   /**
-   * Submit a New Collection Point / Waste Pick Point
-   * HTTP POST /api/v1/collections-points
+   * Submit a New Suggestion
+   * HTTP POST /api/v1/citizen/suggestions
    */
   createSuggestion: async (data) => {
-    const response = await api.post('/citizen/suggestions', {
-      route_id: data.route_id ?? 0,
-      waste_bin_id: data.waste_bin_id || crypto.randomUUID(),
-      latitude: data.latitude,
-      longitude: data.longitude,
-      sequence_order: data.sequence_order ?? 1,
-    });
+    const response = await api.post('/citizen/suggestions', data);
     return response.data;
   },
 
