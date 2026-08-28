@@ -503,57 +503,53 @@ export default function CitizenDashboard() {
   };
 
   const handleSubmitSuggestion = async (e) => {
-    e.preventDefault();
-    if (submitting) return;
+  e.preventDefault();
+  if (submitting) return;
 
-    setSubmitting(true);
-    try {
-      await citizenService.createSuggestion({
-        title: suggestionForm.title,
-        description: suggestionForm.description,
-        suggestion_type: suggestionForm.suggestion_type,
-        route_id: 0,
-        waste_bin_id: crypto.randomUUID(),
-        latitude: selectedLocation.lat,
-        longitude: selectedLocation.lng,
-        sequence_order: 1,
-      });
+  setSubmitting(true);
+  setFormErrors({});
 
-      showToast("success", "Waste pick point suggested successfully!");
-      setSuggestionForm({
-        title: "",
-        description: "",
-        suggestion_type: "waste_pickup",
-      });
-      setFormErrors({});
-      setDrawerOpen(false);
-      fetchSuggestions();
-      fetchDashboard();
-    } catch (err) {
-      if (err?.response?.status === 422) {
-        const detail = err.response.data?.detail;
-        if (Array.isArray(detail)) {
-          const fieldErrors = {};
-          detail.forEach((item) => {
-            const field = item.loc?.[item.loc.length - 1];
-            if (field) fieldErrors[field] = item.msg;
-          });
-          setFormErrors((prev) => ({ ...prev, ...fieldErrors }));
-        }
-        showToast("error", "Validation error. Please check inputs.");
-      } else {
-        showToast(
-          "error",
-          extractErrorMessage(
-            err,
-            "Could not submit collection point. Please try again.",
-          ),
-        );
-      }
-    } finally {
-      setSubmitting(false);
-    }
+  const payload = {
+    title: suggestionForm.title.trim(),
+    description: suggestionForm.description.trim(),
+    suggestion_type: suggestionForm.suggestion_type,
+    latitude: selectedLocation?.lat != null ? Number(selectedLocation.lat) : null,
+    longitude: selectedLocation?.lng != null ? Number(selectedLocation.lng) : null,
   };
+
+  try {
+    await citizenService.createSuggestion(payload);
+    showToast("success", "Suggestion submitted successfully!");
+    setSuggestionForm({
+      title: "",
+      description: "",
+      suggestion_type: "waste_pickup",
+    });
+    setDrawerOpen(false);
+    fetchSuggestions();
+    fetchDashboard();
+  } catch (err) {
+    if (err?.response?.status === 422) {
+      const detail = err.response.data?.detail;
+      if (Array.isArray(detail)) {
+        const fieldErrors = {};
+        detail.forEach((item) => {
+          const field = item.loc?.[item.loc.length - 1];
+          if (field) fieldErrors[field] = item.msg;
+        });
+        setFormErrors(fieldErrors);
+      }
+      showToast("error", "Validation error. Please check your inputs.");
+    } else {
+      showToast(
+        "error",
+        extractErrorMessage(err, "Could not submit suggestion. Please try again."),
+      );
+    }
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const unreadNotifications = dashboardData?.unread_notifications ?? 0;
   const userName =
