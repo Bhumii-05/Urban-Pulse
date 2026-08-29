@@ -100,6 +100,20 @@ function toTitleCase(value) {
     .join(" ");
 }
 
+function formatLocation(loc) {
+  if (!loc) return "—";
+  if (typeof loc === "string") return loc;
+  if (typeof loc === "object") {
+    const lat = loc.latitude ?? loc.lat;
+    const lng = loc.longitude ?? loc.lng;
+    if (lat != null && lng != null) {
+      return `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`;
+    }
+    return loc.address || loc.name || "Coordinates unavailable";
+  }
+  return String(loc);
+}
+
 function getConcernStatusStyle(status) {
   const key = String(status || "").toLowerCase();
   if (CONCERN_STATUS_STYLES[key]) return CONCERN_STATUS_STYLES[key];
@@ -320,7 +334,7 @@ function ConfirmDeleteDialog({ concern, onCancel, onConfirm, deleting }) {
                   {" "}
                   at{" "}
                   <span className="font-medium text-slate-700">
-                    {concern.location}
+                    {formatLocation(concern.location)}
                   </span>
                 </>
               )}
@@ -503,53 +517,53 @@ export default function CitizenDashboard() {
   };
 
   const handleSubmitSuggestion = async (e) => {
-  e.preventDefault();
-  if (submitting) return;
+    e.preventDefault();
+    if (submitting) return;
 
-  setSubmitting(true);
-  setFormErrors({});
+    setSubmitting(true);
+    setFormErrors({});
 
-  const payload = {
-    title: suggestionForm.title.trim(),
-    description: suggestionForm.description.trim(),
-    suggestion_type: suggestionForm.suggestion_type,
-    latitude: selectedLocation?.lat != null ? Number(selectedLocation.lat) : null,
-    longitude: selectedLocation?.lng != null ? Number(selectedLocation.lng) : null,
-  };
+    const payload = {
+      title: suggestionForm.title.trim(),
+      description: suggestionForm.description.trim(),
+      suggestion_type: suggestionForm.suggestion_type,
+      latitude: selectedLocation?.lat != null ? Number(selectedLocation.lat) : null,
+      longitude: selectedLocation?.lng != null ? Number(selectedLocation.lng) : null,
+    };
 
-  try {
-    await citizenService.createSuggestion(payload);
-    showToast("success", "Suggestion submitted successfully!");
-    setSuggestionForm({
-      title: "",
-      description: "",
-      suggestion_type: "waste_pickup",
-    });
-    setDrawerOpen(false);
-    fetchSuggestions();
-    fetchDashboard();
-  } catch (err) {
-    if (err?.response?.status === 422) {
-      const detail = err.response.data?.detail;
-      if (Array.isArray(detail)) {
-        const fieldErrors = {};
-        detail.forEach((item) => {
-          const field = item.loc?.[item.loc.length - 1];
-          if (field) fieldErrors[field] = item.msg;
-        });
-        setFormErrors(fieldErrors);
+    try {
+      await citizenService.createSuggestion(payload);
+      showToast("success", "Suggestion submitted successfully!");
+      setSuggestionForm({
+        title: "",
+        description: "",
+        suggestion_type: "waste_pickup",
+      });
+      setDrawerOpen(false);
+      fetchSuggestions();
+      fetchDashboard();
+    } catch (err) {
+      if (err?.response?.status === 422) {
+        const detail = err.response.data?.detail;
+        if (Array.isArray(detail)) {
+          const fieldErrors = {};
+          detail.forEach((item) => {
+            const field = item.loc?.[item.loc.length - 1];
+            if (field) fieldErrors[field] = item.msg;
+          });
+          setFormErrors(fieldErrors);
+        }
+        showToast("error", "Validation error. Please check your inputs.");
+      } else {
+        showToast(
+          "error",
+          extractErrorMessage(err, "Could not submit suggestion. Please try again."),
+        );
       }
-      showToast("error", "Validation error. Please check your inputs.");
-    } else {
-      showToast(
-        "error",
-        extractErrorMessage(err, "Could not submit suggestion. Please try again."),
-      );
+    } finally {
+      setSubmitting(false);
     }
-  } finally {
-    setSubmitting(false);
-  }
-};
+  };
 
   const unreadNotifications = dashboardData?.unread_notifications ?? 0;
   const userName =
@@ -806,7 +820,7 @@ export default function CitizenDashboard() {
                                 </div>
                               </td>
                               <td className="max-w-[220px] truncate px-5 py-3.5 text-slate-600">
-                                {concern.location || "—"}
+                                {formatLocation(concern.location)}
                               </td>
                               <td className="px-5 py-3.5 text-slate-600">
                                 {formatDate(concern.created_at)}
@@ -895,7 +909,7 @@ export default function CitizenDashboard() {
                                 {concern.category || "General"}
                               </p>
                               <p className="text-xs text-slate-500">
-                                {concern.location || "—"}
+                                {formatLocation(concern.location)}
                               </p>
                             </div>
                           </div>
