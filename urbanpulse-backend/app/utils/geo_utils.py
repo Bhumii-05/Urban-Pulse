@@ -37,25 +37,24 @@ def create_point(
 
 def parse_location(location):
     """
-    Convert the location received from the API into
-    latitude and longitude.
+    Convert API location input into latitude and longitude.
 
     Supported formats:
 
     1. String:
-       "22.522295090296844, 88.39383270947972"
+        "22.522295090296844, 88.39383270947972"
 
     2. Dictionary:
-       {
-           "latitude": 22.522295090296844,
-           "longitude": 88.39383270947972
-       }
+        {
+            "latitude": 22.522295090296844,
+            "longitude": 88.39383270947972
+        }
 
     3. Dictionary using lat/lng:
-       {
-           "lat": 22.522295090296844,
-           "lng": 88.39383270947972
-       }
+        {
+            "lat": 22.522295090296844,
+            "lng": 88.39383270947972
+        }
 
     Returns:
         (latitude, longitude)
@@ -66,7 +65,8 @@ def parse_location(location):
 
         if len(parts) != 2:
             raise ValueError(
-                "Location must be in 'latitude, longitude' format."
+                "Location must be in "
+                "'latitude, longitude' format."
             )
 
         try:
