@@ -20,6 +20,10 @@ export const routeService = {
     const response = await api.get('/collection-points');
     return response.data;
   },
+  createPoint: async (pointData) => {
+    const response = await api.post('/collection-points', pointData);
+    return response.data;
+  },
   getPointsByRoute: async (routeId) => {
     const response = await api.get(`/collection-points/route/${routeId}`);
     return response.data;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Menu,
   X,
@@ -26,6 +27,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { profileService } from "../api/profile.service";
+import { notificationService } from "../api/notification.service";
 
 /* ------------------------------------------------------------------ */
 /*  Theme tokens                                                       */
@@ -45,9 +47,6 @@ const COLORS = {
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard },
-  { label: "Report Waste", icon: Recycle },
-  
-  { label: "Notifications", icon: Bell },
   { label: "Profile", icon: User },
 ];
 
@@ -227,8 +226,53 @@ function Sidebar({ isOpen, onClose, onNavigate, userName, userEmail, onLogout })
 }
 
 function TopBar() {
+  const [notifications, setNotifications] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleBellClick = async () => {
+    const nextState = !showDropdown;
+    setShowDropdown(nextState);
+
+    if (nextState) {
+      setLoading(true);
+      try {
+        const data = await notificationService.getNotifications();
+        setNotifications(data || []);
+      } catch (err) {
+        console.error("Failed to fetch notifications:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationService.markAllRead();
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, is_read: true }))
+      );
+    } catch (err) {
+      console.error("Failed to mark notifications as read:", err);
+    }
+  };
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      );
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
   return (
-    <div className="flex items-start justify-between mb-8 gap-4">
+    <div className="flex items-start justify-between mb-8 gap-4 relative">
       <div>
         <h1
           className="text-3xl font-extrabold tracking-tight"
@@ -240,14 +284,68 @@ function TopBar() {
           Manage your account information and security.
         </p>
       </div>
-      <button
-        aria-label="Notifications"
-        className="relative flex items-center justify-center w-11 h-11 rounded-full bg-white border shadow-sm hover:shadow-md transition-shadow flex-shrink-0"
-        style={{ borderColor: COLORS.line }}
-      >
-        <Bell className="w-5 h-5" style={{ color: COLORS.ink }} />
-        <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.ember }} />
-      </button>
+
+      <div className="relative">
+        <button
+          onClick={handleBellClick}
+          aria-label="Notifications"
+          className="relative flex items-center justify-center w-11 h-11 rounded-full bg-white border shadow-sm hover:shadow-md transition-shadow flex-shrink-0"
+          style={{ borderColor: COLORS.line }}
+        >
+          <Bell className="w-5 h-5" style={{ color: COLORS.ink }} />
+          {unreadCount > 0 && (
+            <span
+              className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full"
+              style={{ backgroundColor: COLORS.ember }}
+            />
+          )}
+        </button>
+
+        {showDropdown && (
+          <div
+            className="absolute right-0 mt-2 w-80 bg-white border rounded-2xl shadow-xl z-50 overflow-hidden"
+            style={{ borderColor: COLORS.line }}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50" style={{ borderColor: COLORS.line }}>
+              <span className="font-semibold text-sm" style={{ color: COLORS.ink }}>
+                Notifications
+              </span>
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="text-xs font-semibold text-emerald-700 hover:underline"
+                >
+                  Mark all as read
+                </button>
+              )}
+            </div>
+
+            <div className="max-h-64 overflow-y-auto">
+              {loading ? (
+                <div className="p-4 text-center text-xs text-gray-500">Loading...</div>
+              ) : notifications.length === 0 ? (
+                <div className="p-4 text-center text-xs text-gray-500">No notifications</div>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => !n.is_read && handleMarkAsRead(n.id)}
+                    className={`p-3 text-xs border-b cursor-pointer transition-colors ${
+                      !n.is_read ? "bg-emerald-50 font-medium" : "bg-white text-gray-600"
+                    }`}
+                    style={{ borderColor: COLORS.line }}
+                  >
+                    <p>{n.message || n.title}</p>
+                    <span className="text-[10px] text-gray-400 mt-1 block">
+                      {n.created_at ? new Date(n.created_at).toLocaleTimeString() : ""}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -634,6 +732,8 @@ function Toast({ type, message }) {
 /* ------------------------------------------------------------------ */
 
 export default function Profile() {
+  const navigate = useNavigate();
+
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -728,7 +828,22 @@ export default function Profile() {
 
   const handlePhotoClick = () => pushToast("success", "Photo upload is coming soon.");
   const handleContactSupport = () => pushToast("success", "Support request noted — we'll be in touch.");
-  const handleNavigate = () => setSidebarOpen(false);
+  
+  const handleNavigate = (label) => {
+    setSidebarOpen(false);
+    if (label === "Dashboard") {
+      const role = profile?.role?.toLowerCase() || localStorage.getItem("role")?.toLowerCase();
+      if (role === "admin") {
+        navigate("/admin");
+      } else if (role === "worker") {
+        navigate("/worker");
+      } else {
+        navigate("/citizen");
+      }
+    } else if (label === "Profile") {
+      navigate("/profile");
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -740,12 +855,12 @@ export default function Profile() {
 
   return (
     <div
-  className="min-h-screen relative"
-  style={{
-    background:
-      "linear-gradient(135deg, #EAF4EE 0%, #F4F7F5 45%, #DCEFE3 100%)",
-  }}
->
+      className="min-h-screen relative"
+      style={{
+        background:
+          "linear-gradient(135deg, #EAF4EE 0%, #F4F7F5 45%, #DCEFE3 100%)",
+      }}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
@@ -810,12 +925,12 @@ export default function Profile() {
         <div className={`transition-all duration-300 ease-in-out ${sidebarOpen ? "md:ml-72" : "md:ml-0"}`}>
           {/* Utility bar: hamburger menu toggle */}
           <div
-  className="sticky top-0 z-20 backdrop-blur-md"
-  style={{
-    backgroundColor: "rgba(234, 244, 238, 0.85)",
-    borderBottom: "1px solid rgba(20, 90, 50, 0.08)",
-  }}
->
+            className="sticky top-0 z-20 backdrop-blur-md"
+            style={{
+              backgroundColor: "rgba(234, 244, 238, 0.85)",
+              borderBottom: "1px solid rgba(20, 90, 50, 0.08)",
+            }}
+          >
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
               <button
                 onClick={() => setSidebarOpen(true)}

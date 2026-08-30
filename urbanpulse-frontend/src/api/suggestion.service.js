@@ -3,19 +3,19 @@ import api from './axios';
 export const suggestionService = {
   // GET /api/v1/suggestions/ - Fetch all citizen suggestions
   getAllSuggestions: async () => {
-    const response = await api.get('/suggestions/');
+    const response = await api.get('/admin/suggestions/');
     return response.data;
   },
 
   // GET /api/v1/suggestions/{suggestion_id}
   getSuggestionById: async (suggestionId) => {
-    const response = await api.get(`/suggestions/${suggestionId}`);
+    const response = await api.get(`/admin/suggestions/${suggestionId}`);
     return response.data;
   },
 
   // PATCH /api/v1/suggestions/{suggestion_id}/status - Approve / Reject
   updateSuggestionStatus: async (suggestionId, status) => {
-    const response = await api.patch(`/suggestions/${suggestionId}/status`, { status });
+    const response = await api.patch(`/admin/suggestions/${suggestionId}/status`, { status });
     return response.data;
   },
 

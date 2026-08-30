@@ -22,6 +22,8 @@ import {
   Wrench,
   ChevronRight,
   LogOut,
+  User,
+  Check,
 } from "lucide-react";
 import {
   MapContainer,
@@ -35,6 +37,7 @@ import "leaflet/dist/leaflet.css";
 
 import { citizenService } from "../api/citizen.service";
 import { authService } from "../api/auth.service";
+import { notificationService } from "../api/notification.service";
 import FloatingChatbot from "../components/FloatingChatbot";
 import { useNavigate } from "react-router-dom";
 
@@ -359,6 +362,12 @@ export default function CitizenDashboard() {
   const [userProfile, setUserProfile] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
 
+  // Notifications
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const notificationMenuRef = useRef(null);
+
   // Dashboard stats
   const [dashboardData, setDashboardData] = useState(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
@@ -457,6 +466,87 @@ export default function CitizenDashboard() {
     fetchSuggestions();
   }, [fetchProfile, fetchDashboard, fetchConcerns, fetchSuggestions]);
 
+  // Click outside listener for notification dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        notificationMenuRef.current &&
+        !notificationMenuRef.current.contains(event.target)
+      ) {
+        setNotificationsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Notification API handlers
+  const handleToggleNotifications = async () => {
+    const nextState = !notificationsOpen;
+    setNotificationsOpen(nextState);
+
+    if (nextState) {
+      setNotificationsLoading(true);
+      try {
+        const data = await notificationService.getNotifications();
+        setNotifications(Array.isArray(data) ? data : []);
+      } catch (err) {
+        showToast(
+          "error",
+          extractErrorMessage(err, "Failed to load notifications."),
+        );
+      } finally {
+        setNotificationsLoading(false);
+      }
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationService.markAllRead();
+      setNotifications((prev) =>
+        prev.map((item) => ({ ...item, is_read: true, read: true })),
+      );
+      setDashboardData((prev) =>
+        prev ? { ...prev, unread_notifications: 0 } : prev,
+      );
+      showToast("success", "All notifications marked as read.");
+    } catch (err) {
+      showToast(
+        "error",
+        extractErrorMessage(err, "Could not mark notifications as read."),
+      );
+    }
+  };
+
+  const handleMarkAsRead = async (notificationId, isRead) => {
+    if (isRead) return;
+    try {
+      await notificationService.markAsRead(notificationId);
+      setNotifications((prev) =>
+        prev.map((item) => {
+          const id = item.id || item._id;
+          return id === notificationId
+            ? { ...item, is_read: true, read: true }
+            : item;
+        }),
+      );
+      setDashboardData((prev) =>
+        prev
+          ? {
+              ...prev,
+              unread_notifications: Math.max(
+                0,
+                (prev.unread_notifications ?? 1) - 1,
+              ),
+            }
+          : prev,
+      );
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    }
+  };
+
   const handleConfirmDelete = async () => {
     if (!concernToDelete) return;
     const targetId = concernToDelete.id || concernToDelete._id;
@@ -503,53 +593,58 @@ export default function CitizenDashboard() {
   };
 
   const handleSubmitSuggestion = async (e) => {
-  e.preventDefault();
-  if (submitting) return;
+    e.preventDefault();
+    if (submitting) return;
 
-  setSubmitting(true);
-  setFormErrors({});
+    setSubmitting(true);
+    setFormErrors({});
 
-  const payload = {
-    title: suggestionForm.title.trim(),
-    description: suggestionForm.description.trim(),
-    suggestion_type: suggestionForm.suggestion_type,
-    latitude: selectedLocation?.lat != null ? Number(selectedLocation.lat) : null,
-    longitude: selectedLocation?.lng != null ? Number(selectedLocation.lng) : null,
-  };
+    const payload = {
+      title: suggestionForm.title.trim(),
+      description: suggestionForm.description.trim(),
+      suggestion_type: suggestionForm.suggestion_type,
+      latitude:
+        selectedLocation?.lat != null ? Number(selectedLocation.lat) : null,
+      longitude:
+        selectedLocation?.lng != null ? Number(selectedLocation.lng) : null,
+    };
 
-  try {
-    await citizenService.createSuggestion(payload);
-    showToast("success", "Suggestion submitted successfully!");
-    setSuggestionForm({
-      title: "",
-      description: "",
-      suggestion_type: "waste_pickup",
-    });
-    setDrawerOpen(false);
-    fetchSuggestions();
-    fetchDashboard();
-  } catch (err) {
-    if (err?.response?.status === 422) {
-      const detail = err.response.data?.detail;
-      if (Array.isArray(detail)) {
-        const fieldErrors = {};
-        detail.forEach((item) => {
-          const field = item.loc?.[item.loc.length - 1];
-          if (field) fieldErrors[field] = item.msg;
-        });
-        setFormErrors(fieldErrors);
+    try {
+      await citizenService.createSuggestion(payload);
+      showToast("success", "Suggestion submitted successfully!");
+      setSuggestionForm({
+        title: "",
+        description: "",
+        suggestion_type: "waste_pickup",
+      });
+      setDrawerOpen(false);
+      fetchSuggestions();
+      fetchDashboard();
+    } catch (err) {
+      if (err?.response?.status === 422) {
+        const detail = err.response.data?.detail;
+        if (Array.isArray(detail)) {
+          const fieldErrors = {};
+          detail.forEach((item) => {
+            const field = item.loc?.[item.loc.length - 1];
+            if (field) fieldErrors[field] = item.msg;
+          });
+          setFormErrors(fieldErrors);
+        }
+        showToast("error", "Validation error. Please check your inputs.");
+      } else {
+        showToast(
+          "error",
+          extractErrorMessage(
+            err,
+            "Could not submit suggestion. Please try again.",
+          ),
+        );
       }
-      showToast("error", "Validation error. Please check your inputs.");
-    } else {
-      showToast(
-        "error",
-        extractErrorMessage(err, "Could not submit suggestion. Please try again."),
-      );
+    } finally {
+      setSubmitting(false);
     }
-  } finally {
-    setSubmitting(false);
-  }
-};
+  };
 
   const unreadNotifications = dashboardData?.unread_notifications ?? 0;
   const userName =
@@ -579,18 +674,100 @@ export default function CitizenDashboard() {
 
           {/* Right side */}
           <div className="flex shrink-0 items-center gap-3 sm:gap-4">
-            {/* Notification */}
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="relative rounded-full p-2 text-emerald-100/90 transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-            >
-              <Bell className="h-5 w-5" />
+            {/* Notification Dropdown Container */}
+            <div className="relative" ref={notificationMenuRef}>
+              <button
+                type="button"
+                aria-label="Notifications"
+                onClick={handleToggleNotifications}
+                className="relative rounded-full p-2 text-emerald-100/90 transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+              >
+                <Bell className="h-5 w-5" />
 
-              {unreadNotifications > 0 && (
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-[#0B2818]" />
+                {unreadNotifications > 0 && (
+                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-[#0B2818]" />
+                )}
+              </button>
+
+              {/* Notifications Popover Menu */}
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 z-50">
+                  <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-800">
+                        Notifications
+                      </span>
+                      {unreadNotifications > 0 && (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+                          {unreadNotifications} new
+                        </span>
+                      )}
+                    </div>
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                    {notificationsLoading ? (
+                      <div className="flex items-center justify-center p-8 text-slate-400">
+                        <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center p-8 text-center">
+                        <Bell className="h-8 w-8 text-slate-300 mb-2" />
+                        <p className="text-xs font-medium text-slate-600">
+                          No notifications yet
+                        </p>
+                      </div>
+                    ) : (
+                      notifications.map((item) => {
+                        const notificationId = item.id || item._id;
+                        const isRead = item.is_read || item.read;
+                        return (
+                          <div
+                            key={notificationId}
+                            onClick={() =>
+                              handleMarkAsRead(notificationId, isRead)
+                            }
+                            className={`flex flex-col gap-1 p-3.5 text-xs transition cursor-pointer hover:bg-slate-50 ${
+                              !isRead ? "bg-emerald-50/40" : ""
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p
+                                className={`font-semibold ${
+                                  !isRead
+                                    ? "text-emerald-950 font-bold"
+                                    : "text-slate-800"
+                                }`}
+                              >
+                                {item.title || "Notification"}
+                              </p>
+                              {!isRead && (
+                                <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500 mt-1" />
+                              )}
+                            </div>
+                            <p className="text-slate-600 leading-snug">
+                              {item.message || item.description || "—"}
+                            </p>
+                            <span className="mt-1 text-[10px] text-slate-400">
+                              {formatDate(item.created_at || item.createdAt)}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
 
             {/* Divider */}
             <span className="hidden h-8 w-px bg-white/15 sm:block" />
@@ -620,7 +797,17 @@ export default function CitizenDashboard() {
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5 z-50">
+                <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5 z-50 divide-y divide-slate-100">
+                  <button
+                    onClick={() => {
+                      setProfileOpen(false);
+                      navigate("/profile");
+                    }}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                  >
+                    <User className="h-4 w-4 text-slate-500" />
+                    Profile
+                  </button>
                   <button
                     onClick={() => authService.logout()}
                     className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-600 transition-colors hover:bg-red-50"
