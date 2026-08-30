@@ -103,6 +103,20 @@ function toTitleCase(value) {
     .join(" ");
 }
 
+function formatLocation(loc) {
+  if (!loc) return "—";
+  if (typeof loc === "string") return loc;
+  if (typeof loc === "object") {
+    const lat = loc.latitude ?? loc.lat;
+    const lng = loc.longitude ?? loc.lng;
+    if (lat != null && lng != null) {
+      return `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`;
+    }
+    return loc.address || loc.name || "Coordinates unavailable";
+  }
+  return String(loc);
+}
+
 function getConcernStatusStyle(status) {
   const key = String(status || "").toLowerCase();
   if (CONCERN_STATUS_STYLES[key]) return CONCERN_STATUS_STYLES[key];
@@ -323,7 +337,7 @@ function ConfirmDeleteDialog({ concern, onCancel, onConfirm, deleting }) {
                   {" "}
                   at{" "}
                   <span className="font-medium text-slate-700">
-                    {concern.location}
+                    {formatLocation(concern.location)}
                   </span>
                 </>
               )}
@@ -603,10 +617,8 @@ export default function CitizenDashboard() {
       title: suggestionForm.title.trim(),
       description: suggestionForm.description.trim(),
       suggestion_type: suggestionForm.suggestion_type,
-      latitude:
-        selectedLocation?.lat != null ? Number(selectedLocation.lat) : null,
-      longitude:
-        selectedLocation?.lng != null ? Number(selectedLocation.lng) : null,
+      latitude: selectedLocation?.lat != null ? Number(selectedLocation.lat) : null,
+      longitude: selectedLocation?.lng != null ? Number(selectedLocation.lng) : null,
     };
 
     try {
@@ -635,10 +647,7 @@ export default function CitizenDashboard() {
       } else {
         showToast(
           "error",
-          extractErrorMessage(
-            err,
-            "Could not submit suggestion. Please try again.",
-          ),
+          extractErrorMessage(err, "Could not submit suggestion. Please try again."),
         );
       }
     } finally {
@@ -993,7 +1002,7 @@ export default function CitizenDashboard() {
                                 </div>
                               </td>
                               <td className="max-w-[220px] truncate px-5 py-3.5 text-slate-600">
-                                {concern.location || "—"}
+                                {formatLocation(concern.location)}
                               </td>
                               <td className="px-5 py-3.5 text-slate-600">
                                 {formatDate(concern.created_at)}
@@ -1082,7 +1091,7 @@ export default function CitizenDashboard() {
                                 {concern.category || "General"}
                               </p>
                               <p className="text-xs text-slate-500">
-                                {concern.location || "—"}
+                                {formatLocation(concern.location)}
                               </p>
                             </div>
                           </div>
