@@ -21,6 +21,8 @@ import {
   Wrench,
   ChevronRight,
   LogOut,
+  User,
+  Check,
 } from "lucide-react";
 import {
   MapContainer,
@@ -629,7 +631,17 @@ export default function CitizenDashboard() {
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5 z-50">
+                <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5 z-50 divide-y divide-slate-100">
+                  <button
+                    onClick={() => {
+                      setProfileOpen(false);
+                      navigate("/profile");
+                    }}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                  >
+                    <User className="h-4 w-4 text-slate-500" />
+                    Profile
+                  </button>
                   <button
                     onClick={() => authService.logout()}
                     className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-600 transition-colors hover:bg-red-50"
