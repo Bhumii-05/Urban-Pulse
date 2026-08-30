@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Leaf,
-  User,
   LogOut,
   Truck,
   MapPin,
@@ -16,16 +15,22 @@ import {
   RefreshCw,
   Inbox,
   CircleDot,
+  ChevronDown,
+  User as UserIcon,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useNavigate } from 'react-router-dom';
+
+import NotificationDropdown from '../components/NotificationDropdown';
+import FloatingChatbot from '../components/FloatingChatbot';
 
 import { workerService } from '../api/worker.service.js';
 import { authService } from '../api/auth.service.js';
 
 /* ------------------------------------------------------------------ */
-/*  Theme                                                              */
+/*  Theme & Helpers                                                   */
 /* ------------------------------------------------------------------ */
 
 const THEME = {
@@ -39,9 +44,25 @@ const THEME = {
   lightRed: '#FEE2E2',
 };
 
-/* ------------------------------------------------------------------ */
-/*  Defensive data helpers                                             */
-/* ------------------------------------------------------------------ */
+function getInitials(name) {
+  if (!name) return 'W';
+  return name
+    .split(' ')
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+function Avatar({ name, size = 'w-9 h-9 text-xs' }) {
+  return (
+    <div
+      className={`${size} bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold shrink-0 shadow-sm ring-2 ring-white`}
+    >
+      {getInitials(name)}
+    </div>
+  );
+}
 
 const isNum = (v) => typeof v === 'number' && !Number.isNaN(v);
 
@@ -153,7 +174,7 @@ function normalizeStop(stop, index) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Toast system                                                       */
+/*  Toast system & Sub-components                                     */
 /* ------------------------------------------------------------------ */
 
 function useToasts() {
@@ -219,10 +240,6 @@ function ToastStack({ toasts, onDismiss }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Circular progress meter                                            */
-/* ------------------------------------------------------------------ */
-
 function CircularProgress({ completed, total }) {
   const radius = 34;
   const circumference = 2 * Math.PI * radius;
@@ -261,10 +278,6 @@ function CircularProgress({ completed, total }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Status badge                                                       */
-/* ------------------------------------------------------------------ */
-
 function StatusBadge({ status, issueReason }) {
   if (status === 'collected') {
     return (
@@ -289,10 +302,6 @@ function StatusBadge({ status, issueReason }) {
     </span>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Leaflet helpers                                                    */
-/* ------------------------------------------------------------------ */
 
 const MARKER_COLORS = {
   collected: THEME.emerald,
@@ -385,10 +394,6 @@ function RouteMap({ stops }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Report Issue modal                                                 */
-/* ------------------------------------------------------------------ */
-
 function ReportIssueModal({ stop, onClose, onSubmit, submitting }) {
   const [reason, setReason] = useState('');
 
@@ -447,13 +452,15 @@ function ReportIssueModal({ stop, onClose, onSubmit, submitting }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main component                                                     */
+/*  Main Component                                                    */
 /* ------------------------------------------------------------------ */
 
 export default function WorkerDashboard() {
+  const navigate = useNavigate();
   const { toasts, push: pushToast, remove: removeToast } = useToasts();
 
-  const [userName, setUserName] = useState('Sanitation Worker');
+  const [userName, setUserName] = useState('Worker');
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const [route, setRoute] = useState(null);
   const [routeLoading, setRouteLoading] = useState(true);
@@ -471,18 +478,40 @@ export default function WorkerDashboard() {
 
   const routeId = getRouteId(route);
 
-  /* -------------------------- Load user -------------------------- */
+  /* Load logged-in user profile asynchronously */
   useEffect(() => {
-    try {
-      const current = authService?.getCurrentUser?.() ?? authService?.currentUser ?? null;
-      const name = current?.name ?? current?.fullName ?? current?.full_name ?? current?.username;
-      if (name) setUserName(name);
-    } catch (e) {
-      // Non-fatal
-    }
+    const fetchUser = async () => {
+      try {
+        let current = null;
+        if (typeof authService?.getCurrentUser === 'function') {
+          current = await authService.getCurrentUser();
+        }
+
+        if (!current) {
+          const storedUser = localStorage.getItem('user');
+          current = storedUser ? JSON.parse(storedUser) : (authService?.currentUser ?? null);
+        }
+
+        const name =
+          current?.full_name ??
+          current?.fullName ??
+          current?.name ??
+          current?.username ??
+          current?.user?.full_name ??
+          current?.user?.name;
+
+        if (name) {
+          setUserName(name);
+        }
+      } catch (e) {
+        console.error('Failed to resolve logged in user:', e);
+      }
+    };
+
+    fetchUser();
   }, []);
 
-  /* -------------------------- Load route -------------------------- */
+  /* Load route */
   const loadRoute = useCallback(async () => {
     setRouteLoading(true);
     setRouteError(null);
@@ -502,7 +531,7 @@ export default function WorkerDashboard() {
     loadRoute();
   }, [loadRoute]);
 
-  /* -------------------------- Load stops -------------------------- */
+  /* Load stops */
   const loadStops = useCallback(async () => {
     if (!routeId) return;
     setStopsLoading(true);
@@ -523,11 +552,11 @@ export default function WorkerDashboard() {
     loadStops();
   }, [loadStops]);
 
-  /* -------------------------- Derived progress -------------------------- */
+  /* Derived progress */
   const totalStops = stops.length;
   const completedStops = useMemo(() => stops.filter((s) => s.status === 'collected').length, [stops]);
 
-  /* -------------------------- Actions -------------------------- */
+  /* Actions */
   const handleMarkDone = useCallback(
     async (stop) => {
       if (!stop.id || actionLoadingId) return;
@@ -584,67 +613,84 @@ export default function WorkerDashboard() {
     try {
       await authService.logout();
     } catch (e) {
-      // Proceed to redirect regardless of API failure
+      // Proceed to redirect regardless
     } finally {
       window.location.href = '/login';
     }
   }, []);
 
-  /* -------------------------- Render -------------------------- */
-
-  const navLinks = ['About Us', 'Features', 'Contact Us', 'Raise A Concern'];
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-emerald-50">
       <ToastStack toasts={toasts} onDismiss={removeToast} />
 
-      {/* Header */}
-      <header className="sticky top-0 z-40" style={{ background: `linear-gradient(90deg, ${THEME.deepForest}, ${THEME.darkGreen})` }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Leaf className="w-7 h-7 text-emerald-400" />
-            <span className="text-xl font-bold text-white">
-              Urban<span className="text-emerald-400">Pulse</span>
-            </span>
+      {/* Header - Matching Admin Dashboard design */}
+      <header className="sticky top-0 z-40 bg-[#0B3D2E]/95 backdrop-blur-md shadow-lg">
+        <div className="w-full px-5 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-[#0DBF78] flex items-center justify-center">
+              <Leaf className="w-5 h-5 text-white" strokeWidth={2.5} />
+            </div>
+
+            <div className="leading-none">
+              <p className="font-bold text-[19px] tracking-[-0.02em]">
+                <span className="text-white">Urban</span>
+                <span className="text-[#0DBF78]">Pulse</span>
+              </p>
+
+              <p className="mt-1 text-[11px] font-medium text-[#A7D8CB]">
+                Smart Waste Management
+              </p>
+            </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 overflow-x-auto">
-            {navLinks.map((label) => (
-              <a
-                key={label}
-                href="#"
-                onClick={(e) => e.preventDefault()}
-                className="text-sm font-medium text-emerald-50/80 hover:text-white transition-colors whitespace-nowrap"
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-emerald-800/60 border border-emerald-400/30 flex items-center justify-center">
-                <User className="w-5 h-5 text-emerald-200" />
-              </div>
-              <div className="leading-tight">
-                <p className="text-sm font-semibold text-white">{userName}</p>
-                <p className="text-xs text-emerald-300">Worker</p>
-              </div>
+            <NotificationDropdown />
+
+            <div className="w-px h-8 bg-white/15" />
+
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen((o) => !o)}
+                className="flex items-center gap-2.5 hover:bg-white/10 rounded-full pl-1 pr-2 py-1 transition-colors"
+              >
+                <Avatar name={userName} size="w-9 h-9 text-xs" />
+                <div className="text-left leading-tight hidden sm:block">
+                  <p className="text-white text-sm font-semibold">{userName}</p>
+                  <p className="text-emerald-200/70 text-[11px]">Worker</p>
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 text-emerald-200/70 transition-transform ${
+                    profileOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden origin-top-right z-50">
+                  <button
+                    onClick={() => {
+                      setProfileOpen(false);
+                      navigate('/profile');
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+                  >
+                    <UserIcon className="w-4 h-4" /> Profile
+                  </button>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50"
+                  >
+                    <LogOut className="w-4 h-4" /> Log out
+                  </button>
+                </div>
+              )}
             </div>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-2 text-sm font-semibold text-white transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Log Out
-            </button>
           </div>
         </div>
       </header>
 
-      {/* Content */}
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Route loading */}
         {routeLoading && (
           <div className="rounded-2xl bg-white/70 border border-emerald-100 shadow-lg p-10 flex flex-col items-center justify-center gap-3 text-emerald-800">
             <Loader2 className="w-8 h-8 animate-spin" />
@@ -652,7 +698,6 @@ export default function WorkerDashboard() {
           </div>
         )}
 
-        {/* Route error */}
         {!routeLoading && routeError && (
           <div className="rounded-2xl bg-red-50 border border-red-200 shadow-lg p-10 flex flex-col items-center justify-center gap-3 text-center">
             <AlertTriangle className="w-8 h-8 text-red-500" />
@@ -667,7 +712,6 @@ export default function WorkerDashboard() {
           </div>
         )}
 
-        {/* No assigned route */}
         {!routeLoading && !routeError && !route && (
           <div className="rounded-2xl bg-white/70 border border-emerald-100 shadow-lg p-10 flex flex-col items-center justify-center gap-3 text-center text-emerald-800">
             <Inbox className="w-8 h-8 text-emerald-400" />
@@ -676,7 +720,6 @@ export default function WorkerDashboard() {
           </div>
         )}
 
-        {/* Route card */}
         {!routeLoading && !routeError && route && (
           <div
             className="rounded-3xl shadow-2xl overflow-hidden border border-white/10"
@@ -829,6 +872,9 @@ export default function WorkerDashboard() {
         onSubmit={handleSubmitIssue}
         submitting={submittingIssue}
       />
+
+      {/* Floating Chatbot */}
+      <FloatingChatbot />
     </div>
   );
 }
