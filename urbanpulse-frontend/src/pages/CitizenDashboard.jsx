@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Leaf,
-  Bell,
   ChevronDown,
   X,
   Loader2,
@@ -36,6 +35,8 @@ import "leaflet/dist/leaflet.css";
 import { citizenService } from "../api/citizen.service";
 import { authService } from "../api/auth.service";
 import FloatingChatbot from "../components/FloatingChatbot";
+import ConcernImageGallery from "../components/report-concern/ConcernImageGallery";
+import NotificationDropdown from "../components/NotificationDropdown";
 import { useNavigate } from "react-router-dom";
 
 const DEFAULT_CENTER = { lat: 22.5726, lng: 88.3639 };
@@ -527,8 +528,10 @@ export default function CitizenDashboard() {
       title: suggestionForm.title.trim(),
       description: suggestionForm.description.trim(),
       suggestion_type: suggestionForm.suggestion_type,
-      latitude: selectedLocation?.lat != null ? Number(selectedLocation.lat) : null,
-      longitude: selectedLocation?.lng != null ? Number(selectedLocation.lng) : null,
+      latitude:
+        selectedLocation?.lat != null ? Number(selectedLocation.lat) : null,
+      longitude:
+        selectedLocation?.lng != null ? Number(selectedLocation.lng) : null,
     };
 
     try {
@@ -557,7 +560,10 @@ export default function CitizenDashboard() {
       } else {
         showToast(
           "error",
-          extractErrorMessage(err, "Could not submit suggestion. Please try again."),
+          extractErrorMessage(
+            err,
+            "Could not submit suggestion. Please try again.",
+          ),
         );
       }
     } finally {
@@ -565,7 +571,6 @@ export default function CitizenDashboard() {
     }
   };
 
-  const unreadNotifications = dashboardData?.unread_notifications ?? 0;
   const userName =
     userProfile?.full_name || userProfile?.name || "Sneha Kesharwani";
 
@@ -593,18 +598,8 @@ export default function CitizenDashboard() {
 
           {/* Right side */}
           <div className="flex shrink-0 items-center gap-3 sm:gap-4">
-            {/* Notification */}
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="relative rounded-full p-2 text-emerald-100/90 transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-            >
-              <Bell className="h-5 w-5" />
-
-              {unreadNotifications > 0 && (
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-[#0B2818]" />
-              )}
-            </button>
+            {/* Extracted Notification Dropdown Component */}
+            <NotificationDropdown />
 
             {/* Divider */}
             <span className="hidden h-8 w-px bg-white/15 sm:block" />
@@ -785,12 +780,25 @@ export default function CitizenDashboard() {
                   <table className="w-full min-w-[720px] text-left text-sm">
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500">
-                        <th className="px-5 py-3 font-medium">Category</th>
-                        <th className="px-5 py-3 font-medium">Location</th>
-                        <th className="px-5 py-3 font-medium">Reported Date</th>
-                        <th className="px-5 py-3 font-medium">Priority</th>
-                        <th className="px-5 py-3 font-medium">Status</th>
-                        <th className="px-5 py-3 font-medium text-right">
+                        <th className="pl-12 pr-5 py-3 font-medium text-left">
+                          Category
+                        </th>
+                        <th className="px-5 py-3 font-medium text-left">
+                          Location
+                        </th>
+                        <th className="px-5 py-3 font-medium text-left">
+                          Reported Date
+                        </th>
+                        <th className="px-5 py-3 font-medium text-left">
+                          Priority
+                        </th>
+                        <th className="px-5 py-3 font-medium text-left">
+                          Status
+                        </th>
+                        <th
+                          colSpan={2}
+                          className="pl-5 pr-12 py-3 font-medium text-center"
+                        >
                           Actions
                         </th>
                       </tr>
@@ -806,6 +814,7 @@ export default function CitizenDashboard() {
                           String(concern.status).toLowerCase(),
                         );
                         const isExpanded = expandedConcernId === concernId;
+
                         return (
                           <Fragment key={concernId}>
                             <tr className="transition hover:bg-slate-50/60">
@@ -839,46 +848,57 @@ export default function CitizenDashboard() {
                                   dot={statusStyle.dot}
                                 />
                               </td>
-                              <td className="px-5 py-3.5">
-                                <div className="flex items-center justify-end gap-1.5">
+
+                              {/* First Action Column: Delete Button */}
+                              <td className="pl-5 pr-1 py-3 text-right">
+                                {canDelete && (
                                   <button
-                                    onClick={() =>
-                                      setExpandedConcernId(
-                                        isExpanded ? null : concernId,
-                                      )
-                                    }
-                                    className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+                                    onClick={() => setConcernToDelete(concern)}
+                                    aria-label="Delete concern"
+                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 inline-block"
                                   >
-                                    View
-                                    <ChevronRight
-                                      className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                                    />
+                                    <Trash2 className="h-4 w-4" />
                                   </button>
-                                  {canDelete && (
-                                    <button
-                                      onClick={() =>
-                                        setConcernToDelete(concern)
-                                      }
-                                      aria-label="Delete concern"
-                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
-                                  )}
-                                </div>
+                                )}
+                              </td>
+
+                              {/* Second Action Column: View Button */}
+                              <td className="pl-1 pr-12 py-3.5 text-right">
+                                <button
+                                  onClick={() =>
+                                    setExpandedConcernId(
+                                      isExpanded ? null : concernId,
+                                    )
+                                  }
+                                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 ml-auto"
+                                >
+                                  View
+                                  <ChevronRight
+                                    className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                                  />
+                                </button>
                               </td>
                             </tr>
                             {isExpanded && (
                               <tr className="bg-slate-50/60">
                                 <td
-                                  colSpan={6}
+                                  colSpan={7}
                                   className="px-5 py-4 text-sm text-slate-600"
                                 >
-                                  <span className="font-medium text-slate-700">
-                                    Description:{" "}
-                                  </span>
-                                  {concern.description ||
-                                    "No additional description provided."}
+                                  <div className="space-y-3">
+                                    <div>
+                                      <span className="font-medium text-slate-700">
+                                        Description:{" "}
+                                      </span>
+                                      {concern.description ||
+                                        "No additional description provided."}
+                                    </div>
+
+                                    {/* Isolated Image Gallery Component */}
+                                    <ConcernImageGallery
+                                      concernId={concernId}
+                                    />
+                                  </div>
                                 </td>
                               </tr>
                             )}
@@ -897,6 +917,8 @@ export default function CitizenDashboard() {
                     const canDelete = DELETABLE_STATUSES.includes(
                       String(concern.status).toLowerCase(),
                     );
+                    const isExpanded = expandedConcernId === concernId;
+
                     return (
                       <div key={concernId} className="p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -913,16 +935,33 @@ export default function CitizenDashboard() {
                               </p>
                             </div>
                           </div>
-                          {canDelete && (
+                          <div className="flex items-center gap-1">
+                            {canDelete && (
+                              <button
+                                onClick={() => setConcernToDelete(concern)}
+                                aria-label="Delete concern"
+                                className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+
                             <button
-                              onClick={() => setConcernToDelete(concern)}
-                              aria-label="Delete concern"
-                              className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                              onClick={() =>
+                                setExpandedConcernId(
+                                  isExpanded ? null : concernId,
+                                )
+                              }
+                              className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              View
+                              <ChevronRight
+                                className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                              />
                             </button>
-                          )}
+                          </div>
                         </div>
+
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           <StatusBadge
                             styleClass={statusStyle.badge}
@@ -938,6 +977,21 @@ export default function CitizenDashboard() {
                             {formatDate(concern.created_at)}
                           </span>
                         </div>
+
+                        {/* Mobile Expanded View */}
+                        {isExpanded && (
+                          <div className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-600">
+                            <p className="text-xs">
+                              <span className="font-medium text-slate-700">
+                                Description:{" "}
+                              </span>
+                              {concern.description ||
+                                "No additional description provided."}
+                            </p>
+
+                            <ConcernImageGallery concernId={concernId} />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
