@@ -26,6 +26,8 @@ import {
   MapPin,
   Check,
   XCircle,
+  PlusCircle,
+  Send,
 } from "lucide-react";
 import { userService } from "../api/admin.service";
 import { authService } from "../api/auth.service";
@@ -38,15 +40,73 @@ import NotificationDropdown from "../components/NotificationDropdown";
 import FloatingChatbot from "../components/FloatingChatbot";
 import { useNavigate } from "react-router-dom";
 
+// Leaflet Map Imports
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+
 /* ------------------------------------------------------------------ */
-/*  Background image                                                  */
+/*  Leaflet Marker Icons Setup                                        */
+/* ------------------------------------------------------------------ */
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
+
+const concernIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const suggestionIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const routePointIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const completedPointIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+function MapClickHandler({ isCreatingPoint, onMapClick }) {
+  useMapEvents({
+    click(e) {
+      if (isCreatingPoint) {
+        onMapClick(e.latlng);
+      }
+    },
+  });
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Background image & Constants                                      */
 /* ------------------------------------------------------------------ */
 const BACKGROUND_IMAGE_URL =
   "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5Ojf/2wBDAQoKCg0MDRoPDxo3JR8lNzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzf/wAARCAONBkADASIAAhEBAxEB/8QAGwABAQADAQEBAAAAAAAAAAAAAAECAwQFBgf/xABCEAEAAgIBAgQEAwYDCAICAAcAAQIDEQQSIQUxQVETImFxMoGRBhQjQlJwM6GxFSRDYoKSwdE0RFNUc+EWJWOi8P/EABoBAQEBAQEBAQAAAAAAAAAAAAABAgMEBQb/xAAvEQEBAAIBAwQCAgEEAQUBAAAAAQIRAxIhMQQTQVEUMiJhBSNScYFCkpMH/xAAAEAEBAQEBAAAAAAAAAAAAAAABAhEAMf/aAAw0BAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/Z";
 
-/* ------------------------------------------------------------------ */
-/*  Options / Constants                                               */
-/* ------------------------------------------------------------------ */
 const ROLES = ["Admin", "Worker"];
 const ROLE_FILTERS = ["All", "Admin", "Worker", "Citizen"];
 const STATUS_FILTERS = ["All", "Active", "Inactive"];
@@ -62,9 +122,6 @@ const SUGGESTION_STATUS_FILTERS = [
 const DATE_RANGES = ["Today", "Last 7 days", "Last 30 days"];
 const PAGE_SIZE = 4;
 
-/* ------------------------------------------------------------------ */
-/*  Small helpers                                                     */
-/* ------------------------------------------------------------------ */
 function getInitials(name) {
   if (!name) return "U";
   return name
@@ -185,9 +242,6 @@ const getSuggestionStatusBadge = (status = "pending") => {
   }
 };
 
-/* ------------------------------------------------------------------ */
-/*  Toast                                                             */
-/* ------------------------------------------------------------------ */
 function Toast({ message }) {
   if (!message) return null;
   return (
@@ -201,7 +255,7 @@ function Toast({ message }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main component                                                    */
+/*  Main Component                                                    */
 /* ------------------------------------------------------------------ */
 export default function UrbanPulseDashboard() {
   const navigate = useNavigate();
@@ -211,6 +265,7 @@ export default function UrbanPulseDashboard() {
 
   // User States
   const [users, setUsers] = useState([]);
+  const [workersList, setWorkersList] = useState([]);
   const [adminUser, setAdminUser] = useState({ name: "Admin", role: "Admin" });
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
@@ -250,12 +305,30 @@ export default function UrbanPulseDashboard() {
   const [routePoints, setRoutePoints] = useState([]);
   const [loadingPoints, setLoadingPoints] = useState(false);
 
+  // New Route Modal States
+  const [showCreateRouteModal, setShowCreateRouteModal] = useState(false);
+  const [newRouteForm, setNewRouteForm] = useState({
+    name: "",
+    description: "",
+    worker_id: "",
+    route_date: new Date().toISOString().split("T")[0],
+  });
+
+  // Interactive Map Creation States
+  const [isCreatingPoint, setIsCreatingPoint] = useState(false);
+  const [newPointLocation, setNewPointLocation] = useState(null);
+  const [newPointForm, setNewPointForm] = useState({
+    name: "",
+    assignedWorkerId: "",
+    waste_bin_id: "",
+  });
+
   // Suggestion States
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionSearch, setSuggestionSearch] = useState("");
   const [suggestionStatusFilter, setSuggestionStatusFilter] = useState("All");
 
-  // Live Analytics Overview State
+  // Analytics Overview State
   const [analytics, setAnalytics] = useState({
     totalUsers: 0,
     totalWorkers: 0,
@@ -277,7 +350,7 @@ export default function UrbanPulseDashboard() {
     toastTimer.current = setTimeout(() => setToast(""), 2400);
   }
 
-  // Fetch Users and Current Admin Profile
+  // Fetch Users
   const fetchUsers = async () => {
     try {
       const data = await userService.getAllUsers();
@@ -296,6 +369,7 @@ export default function UrbanPulseDashboard() {
         phone: u.phone_number || u.phone || "—",
       }));
       setUsers(normalized);
+      setWorkersList(normalized.filter((u) => u.role === "Worker"));
     } catch (err) {
       fireToast(
         err.response?.data?.detail || "Failed to load users from backend"
@@ -303,7 +377,7 @@ export default function UrbanPulseDashboard() {
     }
   };
 
-  // Fetch Analytics Overview API
+  // Fetch Analytics Overview
   const fetchAnalyticsOverview = async () => {
     try {
       const data = await analyticsService.getOverview();
@@ -383,11 +457,8 @@ export default function UrbanPulseDashboard() {
         categoryLabel.toLowerCase().includes(concernSearch.toLowerCase()) ||
         (c.id || "").toString().includes(concernSearch);
 
-      // Normalize status strings
       const currentStatus = (c.status || "Pending").toLowerCase();
       const filterStatus = concernStatusFilter.toLowerCase();
-
-      // Map "open" to "pending" for filtering
       const normalizedStatus = currentStatus === "open" ? "pending" : currentStatus;
 
       const matchesStatus =
@@ -416,7 +487,7 @@ export default function UrbanPulseDashboard() {
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const pagedUsers = filteredUsers.slice(pageStart, pageStart + PAGE_SIZE);
 
-  /* ---------------------------- View User ---------------------------- */
+  /* ---------------------------- User Handlers ---------------------------- */
   function openView(user) {
     setEditUser(null);
     setViewUser(user);
@@ -425,7 +496,6 @@ export default function UrbanPulseDashboard() {
     setViewUser(null);
   }
 
-  /* ---------------------------- Edit User ---------------------------- */
   function openEdit(user) {
     setViewUser(null);
     setEditUser(user);
@@ -457,7 +527,6 @@ export default function UrbanPulseDashboard() {
     }
   }
 
-  /* ------------------------ Deactivate User ---------------------------- */
   function openDeactivate(user) {
     setDeactivateUser(user);
   }
@@ -484,7 +553,6 @@ export default function UrbanPulseDashboard() {
     }
   }
 
-  /* --------------------------- Delete User ------------------------------ */
   function openDelete(user) {
     setDeleteUser(user);
   }
@@ -504,7 +572,6 @@ export default function UrbanPulseDashboard() {
     }
   }
 
-  /* --------------------------- Create User -------------------------- */
   function openCreate() {
     setCreateForm({
       name: "",
@@ -540,6 +607,7 @@ export default function UrbanPulseDashboard() {
         phone: created.phone_number || createForm.phone.trim() || "—",
       };
       setUsers((prev) => [newUser, ...prev]);
+      if (newUser.role === "Worker") setWorkersList((prev) => [newUser, ...prev]);
       fireToast(`${newUser.name} was added`);
       closeCreate();
     } catch (err) {
@@ -547,7 +615,7 @@ export default function UrbanPulseDashboard() {
     }
   }
 
-  /* ------------------ CONCERN MANAGEMENT API CALLS ------------------ */
+  /* ------------------ CONCERN API CALLS ------------------ */
 
   const fetchConcerns = async () => {
     try {
@@ -590,7 +658,6 @@ export default function UrbanPulseDashboard() {
 
   const updateConcernStatus = async (concernId, newStatus) => {
     try {
-      // Normalize status to lowercase to pass backend validation
       const apiStatus = newStatus.toLowerCase(); 
       await concernService.updateConcernStatus(concernId, apiStatus);
 
@@ -607,7 +674,7 @@ export default function UrbanPulseDashboard() {
     }
   };
 
-  /* ------------------ ROUTE & POINT API CALLS ------------------ */
+  /* ------------------ ROUTE & MAP API CALLS ------------------ */
 
   const fetchRoutes = async () => {
     try {
@@ -636,6 +703,52 @@ export default function UrbanPulseDashboard() {
     }
   };
 
+  const handleCreateRoute = async () => {
+    if (!newRouteForm.name.trim()) {
+      fireToast("Please enter a route name.");
+      return;
+    }
+    if (!newRouteForm.worker_id) {
+      fireToast("Please assign a worker to this route.");
+      return;
+    }
+
+    try {
+      const createdRoute = await routeService.createRoute({
+        name: newRouteForm.name.trim(),
+        description: newRouteForm.description.trim() || "City Waste Collection Route",
+        worker_id: parseInt(newRouteForm.worker_id, 10),
+        route_date: newRouteForm.route_date,
+      });
+
+      fireToast("New collection route created!");
+      setShowCreateRouteModal(false);
+      setNewRouteForm({
+        name: "",
+        description: "",
+        worker_id: "",
+        route_date: new Date().toISOString().split("T")[0],
+      });
+
+      await fetchRoutes();
+      if (createdRoute) {
+        setSelectedRoute(createdRoute);
+      }
+    } catch (err) {
+      console.error("Route Creation Error Details:", err.response?.data);
+      const errorDetail = err.response?.data?.detail;
+
+      if (Array.isArray(errorDetail)) {
+        const msg = errorDetail.map((e) => `${e.loc.join(".")}: ${e.msg}`).join(", ");
+        fireToast(`Validation Error: ${msg}`);
+      } else if (typeof errorDetail === "string") {
+        fireToast(`Error: ${errorDetail}`);
+      } else {
+        fireToast("Failed to create new collection route");
+      }
+    }
+  };
+
   const handleMarkPointCollected = async (pointId) => {
     try {
       await routeService.markPointCollected(pointId);
@@ -647,6 +760,83 @@ export default function UrbanPulseDashboard() {
       fireToast("Failed to update point status");
     }
   };
+
+  /* Create Point on Map & Assign Worker */
+  const handleMapClick = (latlng) => {
+    setNewPointLocation(latlng);
+  };
+
+  const handleCreateCollectionPoint = async () => {
+    if (!newPointLocation) {
+      fireToast("Please click on the map to select a point spot first.");
+      return;
+    }
+    if (!newPointForm.name.trim()) {
+      fireToast("Please provide a name for the collection point.");
+      return;
+    }
+    if (!selectedRoute?.id) {
+      fireToast("Please select an available route from the list first.");
+      return;
+    }
+
+    try {
+      const pointPayload = {
+  name: newPointForm.name.trim(),
+  latitude: parseFloat(newPointLocation.lat),
+  longitude: parseFloat(newPointLocation.lng),
+  route_id: parseInt(selectedRoute.id, 10),
+  sequence_order: routePoints.length + 1,
+};
+
+if (
+  newPointForm.waste_bin_id &&
+  String(newPointForm.waste_bin_id).trim()
+) {
+  pointPayload.waste_bin_id = String(
+    newPointForm.waste_bin_id
+  ).trim();
+}
+
+      const createdPoint = await routeService.createPoint(pointPayload);
+      const createdPointId = createdPoint?.id || createdPoint?._id;
+
+      if (newPointForm.assignedWorkerId && createdPointId && routeService.createAssignment) {
+        await routeService.createAssignment({
+          worker_id: parseInt(newPointForm.assignedWorkerId, 10),
+          point_id: parseInt(createdPointId, 10),
+          status: "assigned",
+        });
+      }
+
+      fireToast("Collection point created and assigned!");
+      setIsCreatingPoint(false);
+      setNewPointLocation(null);
+      setNewPointForm({ name: "", assignedWorkerId: "", waste_bin_id: "" });
+
+      handleSelectRoute(selectedRoute);
+    } catch (err) {
+      console.error("422 Error Details:", err.response?.data);
+      const errorDetail = err.response?.data?.detail;
+      if (Array.isArray(errorDetail)) {
+        const msg = errorDetail.map((e) => `${e.loc.join(".")}: ${e.msg}`).join(", ");
+        fireToast(`Validation Error: ${msg}`);
+      } else {
+        fireToast(errorDetail || "Failed to create collection point");
+      }
+    }
+  };
+
+  /* Extract polyline positions for selected route */
+  const polylinePositions = useMemo(() => {
+    return routePoints
+      .map((p) => {
+        const lat = p.latitude ?? p.lat;
+        const lng = p.longitude ?? p.lng;
+        return lat && lng ? [lat, lng] : null;
+      })
+      .filter(Boolean);
+  }, [routePoints]);
 
   /* ------------------ SUGGESTION API CALLS ------------------ */
 
@@ -671,8 +861,6 @@ export default function UrbanPulseDashboard() {
       fireToast("Failed to update suggestion status");
     }
   };
-
-  /* ------------------------------------------------------------------ */
 
   const anyDrawerOpen = Boolean(viewUser || editUser);
 
@@ -1131,7 +1319,6 @@ export default function UrbanPulseDashboard() {
               </div>
             </div>
 
-            {/* Concern Filters */}
             <div className="bg-amber-50/60 border border-amber-100 rounded-2xl p-4 mb-5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="relative flex-1 max-w-sm">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -1160,7 +1347,6 @@ export default function UrbanPulseDashboard() {
               </div>
             </div>
 
-            {/* Concerns Table */}
             <div className="rounded-2xl border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto no-scrollbar">
                 <table className="w-full text-sm">
@@ -1246,103 +1432,305 @@ export default function UrbanPulseDashboard() {
           </div>
         )}
 
-        {/* TAB 3: ROUTES & MAP MANAGEMENT */}
+        {/* TAB 3: ROUTES & MAP MANAGEMENT WITH INTEGRATED LEAFLET MAP */}
         {activeTab === "routes" && (
           <div className="bg-white/85 backdrop-blur-xl rounded-3xl shadow-xl ring-1 ring-white/60 border border-white/40 p-6 sm:p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center">
-                <Navigation className="w-5 h-5 text-blue-700" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-[#0B3D2E]">
-                  Collection Routes & Points
-                </h1>
-                <p className="text-sm text-gray-500">
-                  Select a route to view its designated collection points and pickup status.
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center">
+                  <Navigation className="w-5 h-5 text-blue-700" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-[#0B3D2E]">
+                    Collection Routes & Interactive Map
+                  </h1>
+                  <p className="text-sm text-gray-500">
+                    Manage collection routes, click to plot new points, and assign workers.
+                  </p>
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column: Routes List */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">
-                  Available Routes ({routes.length})
-                </h3>
-                {routes.map((route) => {
-                  const isSelected = selectedRoute?.id === route.id;
-                  return (
-                    <div
-                      key={route.id}
-                      onClick={() => handleSelectRoute(route)}
-                      className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                        isSelected
-                          ? "bg-blue-50/90 border-blue-500 shadow-sm"
-                          : "bg-white border-gray-100 hover:border-gray-200"
-                      }`}
+              {/* Left Column: Routes List & Point Creation Form */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                      Available Routes ({routes.length})
+                    </h3>
+                    <button
+                      onClick={() => setShowCreateRouteModal(true)}
+                      className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-sm text-[#0B3D2E]">
-                          {route.name || `Route #${route.id}`}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                            route.status === "Active"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {route.status || "Active"}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {route.description || "City waste pickup path"}
-                      </p>
-                    </div>
-                  );
-                })}
-                {routes.length === 0 && (
-                  <div className="p-8 text-center text-xs text-gray-400 border border-dashed rounded-2xl">
-                    No collection routes found.
+                      <Plus className="w-3.5 h-3.5" /> New Route
+                    </button>
                   </div>
-                )}
-              </div>
 
-              {/* Right Column: Collection Points & Map View */}
-              <div className="lg:col-span-2 space-y-4">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">
-                  Route Details & Map
-                </h3>
-
-                {selectedRoute ? (
-                  <div className="bg-gray-50/80 border border-gray-100 rounded-2xl p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h2 className="text-base font-bold text-[#0B3D2E]">
-                          {selectedRoute.name || `Route #${selectedRoute.id}`}
-                        </h2>
+                  {routes.map((route) => {
+                    const isSelected = selectedRoute?.id === route.id;
+                    return (
+                      <div
+                        key={route.id}
+                        onClick={() => handleSelectRoute(route)}
+                        className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? "bg-blue-50/90 border-blue-500 shadow-sm"
+                            : "bg-white border-gray-100 hover:border-gray-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-sm text-[#0B3D2E]">
+                            {route.route_name || route.name || `Route #${route.id}`}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                              route.status === "Active"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {route.status || "Active"}
+                          </span>
+                        </div>
                         <p className="text-xs text-gray-500">
-                          Assigned Collection Stops
+                          {route.description || "City waste pickup path"}
                         </p>
                       </div>
-                      <span className="text-xs text-blue-600 font-semibold bg-blue-100 px-3 py-1 rounded-lg">
-                        {routePoints.length} Points Total
-                      </span>
+                    );
+                  })}
+
+                  {routes.length === 0 && (
+                    <div className="p-6 text-center border border-dashed rounded-2xl bg-gray-50/50">
+                      <p className="text-xs text-gray-500 mb-3">No collection routes found.</p>
+                      <button
+                        onClick={() => setShowCreateRouteModal(true)}
+                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition"
+                      >
+                        + Create First Route
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Point Creation Control Block */}
+                <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                  <h3 className="text-xs font-bold text-[#0B3D2E] uppercase tracking-wider mb-3">
+                    Map Point Controls
+                  </h3>
+                  <button
+                    onClick={() => setIsCreatingPoint(!isCreatingPoint)}
+                    className={`w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
+                      isCreatingPoint
+                        ? "bg-amber-500 text-white"
+                        : "bg-emerald-600 text-white hover:bg-emerald-700"
+                    }`}
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    {isCreatingPoint ? "Click Map to Choose Spot..." : "Add Point to Map"}
+                  </button>
+
+                  {isCreatingPoint && (
+                    <div className="mt-4 space-y-3">
+                      {newPointLocation ? (
+                        <p className="text-[11px] text-emerald-700 bg-emerald-50 p-2 rounded-xl font-mono">
+                          Selected Lat: {newPointLocation.lat.toFixed(4)}, Lng: {newPointLocation.lng.toFixed(4)}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-amber-600 bg-amber-50 p-2 rounded-xl">
+                          Click anywhere on the map to place point location.
+                        </p>
+                      )}
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">
+                          Point Name / Address
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g., Sector 2 Collection Point"
+                          value={newPointForm.name}
+                          onChange={(e) =>
+                            setNewPointForm({ ...newPointForm, name: e.target.value })
+                          }
+                          className="w-full px-3 py-2 text-xs border rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">
+                          Assign Worker
+                        </label>
+                        <select
+                          value={newPointForm.assignedWorkerId}
+                          onChange={(e) =>
+                            setNewPointForm({ ...newPointForm, assignedWorkerId: e.target.value })
+                          }
+                          className="w-full px-3 py-2 text-xs border rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        >
+                          <option value="">Select Worker (Optional)</option>
+                          {workersList.map((w) => (
+                            <option key={w.id} value={w.id}>
+                              {w.name} ({w.email})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={handleCreateCollectionPoint}
+                        className="w-full py-2 bg-[#0B3D2E] text-white rounded-xl text-xs font-semibold hover:bg-[#0f4c39] flex items-center justify-center gap-1.5 transition"
+                      >
+                        <Send className="w-3.5 h-3.5" /> Confirm & Save Point
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Live OpenStreetMap Container */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Interactive System GIS Map View
+                  </h3>
+                  <div className="flex items-center gap-3 text-[10px] flex-wrap">
+                    <span className="flex items-center gap-1 font-medium">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Concern
+                    </span>
+                    <span className="flex items-center gap-1 font-medium">
+                      <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Suggestion
+                    </span>
+                    <span className="flex items-center gap-1 font-medium">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Pending Stop
+                    </span>
+                    <span className="flex items-center gap-1 font-medium">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Collected
+                    </span>
+                  </div>
+                </div>
+
+                {/* Map Container */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-2 shadow-sm">
+                  <div className="w-full h-[450px] rounded-xl overflow-hidden relative">
+                    <MapContainer
+                      center={[22.5726, 88.3639]}
+                      zoom={12}
+                      style={{ height: "100%", width: "100%" }}
+                    >
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+
+                      <MapClickHandler
+                        isCreatingPoint={isCreatingPoint}
+                        onMapClick={handleMapClick}
+                      />
+
+                      {/* Render Citizen Concerns */}
+                      {concerns.map((c) => {
+                        const lat = c.latitude ?? c.location?.latitude ?? c.lat;
+                        const lng = c.longitude ?? c.location?.longitude ?? c.lng;
+                        if (!lat || !lng) return null;
+                        return (
+                          <Marker key={`concern-${c.id}`} position={[lat, lng]} icon={concernIcon}>
+                            <Popup>
+                              <div className="text-xs space-y-1">
+                                <p className="font-bold text-amber-600">Citizen Concern #{c.id}</p>
+                                <p className="text-gray-700">{c.description || getCategoryLabel(c.category)}</p>
+                                <p className="text-[10px] text-gray-500 font-mono">Status: {c.status || "Pending"}</p>
+                              </div>
+                            </Popup>
+                          </Marker>
+                        );
+                      })}
+
+                      {/* Render Citizen Suggestions */}
+                      {suggestions.map((s) => {
+                        const lat = s.latitude ?? s.lat;
+                        const lng = s.longitude ?? s.lng;
+                        if (!lat || !lng) return null;
+                        return (
+                          <Marker key={`suggestion-${s.id}`} position={[lat, lng]} icon={suggestionIcon}>
+                            <Popup>
+                              <div className="text-xs space-y-1">
+                                <p className="font-bold text-purple-600">Citizen Suggestion</p>
+                                <p className="font-medium text-gray-800">{s.title}</p>
+                                <p className="text-gray-600">{s.description}</p>
+                              </div>
+                            </Popup>
+                          </Marker>
+                        );
+                      })}
+
+                      {/* Render Collection Points */}
+                      {routePoints.map((p) => {
+                        const lat = p.latitude ?? p.lat;
+                        const lng = p.longitude ?? p.lng;
+                        if (!lat || !lng) return null;
+                        const isDone = p.is_collected || p.status === "completed";
+                        return (
+                          <Marker
+                            key={`point-${p.id}`}
+                            position={[lat, lng]}
+                            icon={isDone ? completedPointIcon : routePointIcon}
+                          >
+                            <Popup>
+                              <div className="text-xs space-y-1">
+                                <p className={`font-bold ${isDone ? "text-emerald-600" : "text-blue-600"}`}>
+                                  {p.name || `Collection Point #${p.id}`}
+                                </p>
+                                <p className="text-gray-600">
+                                  Status: {isDone ? "Collected by Worker" : "Pending Pickup"}
+                                </p>
+                                {p.proof_image_url && (
+                                  <div className="mt-2 pt-2 border-t">
+                                    <p className="font-semibold text-[10px] text-gray-700">Worker Uploaded Proof:</p>
+                                    <img
+                                      src={p.proof_image_url}
+                                      alt="Worker upload"
+                                      className="w-28 h-20 object-cover rounded-lg mt-1 border"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </Popup>
+                          </Marker>
+                        );
+                      })}
+
+                      {/* Temporary Marker for new point draft */}
+                      {newPointLocation && (
+                        <Marker position={[newPointLocation.lat, newPointLocation.lng]}>
+                          <Popup>
+                            <span className="text-xs font-bold text-emerald-700">
+                              Selected New Point Spot
+                            </span>
+                          </Popup>
+                        </Marker>
+                      )}
+
+                      {/* Connect points with polyline route */}
+                      {polylinePositions.length > 1 && (
+                        <Polyline positions={polylinePositions} color="#2563eb" weight={3} dashArray="5, 8" />
+                      )}
+                    </MapContainer>
+                  </div>
+                </div>
+
+                {/* Point Status Table */}
+                {selectedRoute && (
+                  <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-xs font-bold text-[#0B3D2E]">
+                        Collection Point List ({routePoints.length})
+                      </h4>
                     </div>
 
-                    <div className="w-full h-44 bg-slate-200 rounded-xl mb-4 flex flex-col items-center justify-center text-slate-500 border border-slate-300 relative overflow-hidden">
-                      <MapIcon className="w-8 h-8 mb-1 text-slate-400" />
-                      <span className="text-xs font-medium">
-                        Interactive GIS Map Integration
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        Displays live GPS points and driver route path
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
+                    <div className="space-y-2 max-h-40 overflow-y-auto no-scrollbar">
                       {loadingPoints ? (
-                        <p className="text-xs text-gray-400 text-center py-4">
+                        <p className="text-xs text-gray-400 text-center py-2">
                           Loading collection points...
                         </p>
                       ) : routePoints.length > 0 ? (
@@ -1364,7 +1752,9 @@ export default function UrbanPulseDashboard() {
                                   {point.name || `Stop Point #${point.id}`}
                                 </p>
                                 <p className="text-[10px] text-gray-400 font-mono">
-                                  {point.location || point.address || "Coords: --"}
+                                  {point.latitude && point.longitude
+                                    ? `${point.latitude}, ${point.longitude}`
+                                    : "Coords: --"}
                                 </p>
                               </div>
                             </div>
@@ -1386,15 +1776,11 @@ export default function UrbanPulseDashboard() {
                           </div>
                         ))
                       ) : (
-                        <p className="text-xs text-gray-400 text-center py-4">
-                          No collection points assigned to this route.
+                        <p className="text-xs text-gray-400 text-center py-2">
+                          No collection points assigned to this route yet.
                         </p>
                       )}
                     </div>
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 rounded-2xl p-8 text-center text-xs text-gray-400">
-                    Select a route from the list to view collection stops.
                   </div>
                 )}
               </div>
@@ -1421,7 +1807,6 @@ export default function UrbanPulseDashboard() {
               </div>
             </div>
 
-            {/* Suggestion Filters */}
             <div className="bg-purple-50/60 border border-purple-100 rounded-2xl p-4 mb-5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="relative flex-1 max-w-sm">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -1450,7 +1835,6 @@ export default function UrbanPulseDashboard() {
               </div>
             </div>
 
-            {/* Suggestions List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredSuggestions.map((s) => {
                 const statusInfo = getSuggestionStatusBadge(s.status);
@@ -2080,6 +2464,80 @@ export default function UrbanPulseDashboard() {
         )}
       </Modal>
 
+      {/* Create Route Modal */}
+      <Modal open={showCreateRouteModal} onClose={() => setShowCreateRouteModal(false)}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-[#0B3D2E]">Create Collection Route</h2>
+          <button
+            onClick={() => setShowCreateRouteModal(false)}
+            className="text-gray-400 hover:text-gray-600 rounded-full p-1"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <Field label="Route Name">
+            <input
+              type="text"
+              placeholder="e.g., sector 2 main route"
+              value={newRouteForm.name}
+              onChange={(e) => setNewRouteForm({ ...newRouteForm, name: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+            />
+          </Field>
+
+          <Field label="Description">
+            <input
+              type="text"
+              placeholder="e.g., daily waste pickup"
+              value={newRouteForm.description}
+              onChange={(e) => setNewRouteForm({ ...newRouteForm, description: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+            />
+          </Field>
+
+          <Field label="Assign Worker">
+            <select
+              value={newRouteForm.worker_id}
+              onChange={(e) => setNewRouteForm({ ...newRouteForm, worker_id: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 bg-white"
+            >
+              <option value="">Select a Worker...</option>
+              {workersList.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.email})
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Route Date">
+            <input
+              type="date"
+              value={newRouteForm.route_date}
+              onChange={(e) => setNewRouteForm({ ...newRouteForm, route_date: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+            />
+          </Field>
+        </div>
+
+        <div className="flex items-center gap-3 mt-6">
+          <button
+            onClick={() => setShowCreateRouteModal(false)}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleCreateRoute}
+            className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700"
+          >
+            Create Route
+          </button>
+        </div>
+      </Modal>
+
       <Toast message={toast} />
       <FloatingChatbot />
     </div>
@@ -2087,7 +2545,7 @@ export default function UrbanPulseDashboard() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Shared bits                                                       */
+/*  Shared UI components                                              */
 /* ------------------------------------------------------------------ */
 function Field({ label, children }) {
   return (
