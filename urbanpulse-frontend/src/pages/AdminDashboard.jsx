@@ -33,6 +33,7 @@ import { concernService } from "../api/concern.service";
 import { routeService } from "../api/route.service";
 import { suggestionService } from "../api/suggestion.service";
 import { analyticsService } from "../api/analytics.service";
+import { getCategoryLabel } from "../api/concernConfig";
 import NotificationDropdown from "../components/NotificationDropdown";
 import FloatingChatbot from "../components/FloatingChatbot";
 import { useNavigate } from "react-router-dom";
@@ -49,7 +50,7 @@ const BACKGROUND_IMAGE_URL =
 const ROLES = ["Admin", "Worker"];
 const ROLE_FILTERS = ["All", "Admin", "Worker", "Citizen"];
 const STATUS_FILTERS = ["All", "Active", "Inactive"];
-const CONCERN_STATUS_FILTERS = ["All", "Pending", "In Progress", "Resolved"];
+const CONCERN_STATUS_FILTERS = ["All", "Pending", "Resolved"];
 const SUGGESTION_STATUS_FILTERS = [
   "All",
   "Pending",
@@ -72,6 +73,31 @@ function getInitials(name) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+}
+
+function formatLocation(loc) {
+  if (!loc) return "—";
+  if (typeof loc === "object") {
+    const lat = loc.latitude ?? loc.lat;
+    const lng = loc.longitude ?? loc.lng;
+    return lat && lng ? `${lat}, ${lng}` : "—";
+  }
+  return String(loc);
+}
+
+function formatDate(dateString) {
+  if (!dateString) return "—";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return String(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch (e) {
+    return String(dateString);
+  }
 }
 
 const ROLE_AVATAR_STYLES = {
@@ -106,6 +132,22 @@ function RoleBadge({ role }) {
       }`}
     >
       {role}
+    </span>
+  );
+}
+
+function PriorityBadge({ priority }) {
+  const norm = String(priority || "").toLowerCase();
+  let style = "bg-gray-100 text-gray-700 border-gray-200";
+  if (norm === "high") style = "bg-red-50 text-red-600 border-red-200";
+  else if (norm === "medium") style = "bg-amber-50 text-amber-600 border-amber-200";
+  else if (norm === "low") style = "bg-emerald-50 text-emerald-600 border-emerald-200";
+
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${style} capitalize`}
+    >
+      {priority || "Low"}
     </span>
   );
 }
@@ -335,13 +377,22 @@ export default function UrbanPulseDashboard() {
 
   const filteredConcerns = useMemo(() => {
     return concerns.filter((c) => {
+      const categoryLabel = getCategoryLabel(c.category) || "";
       const matchesSearch =
         (c.title || "").toLowerCase().includes(concernSearch.toLowerCase()) ||
+        categoryLabel.toLowerCase().includes(concernSearch.toLowerCase()) ||
         (c.id || "").toString().includes(concernSearch);
+
+      // Normalize status strings
+      const currentStatus = (c.status || "Pending").toLowerCase();
+      const filterStatus = concernStatusFilter.toLowerCase();
+
+      // Map "open" to "pending" for filtering
+      const normalizedStatus = currentStatus === "open" ? "pending" : currentStatus;
+
       const matchesStatus =
-        concernStatusFilter === "All" ||
-        (c.status || "Pending").toLowerCase() ===
-          concernStatusFilter.toLowerCase();
+        filterStatus === "all" || normalizedStatus === filterStatus;
+
       return matchesSearch && matchesStatus;
     });
   }, [concerns, concernSearch, concernStatusFilter]);
@@ -513,10 +564,25 @@ export default function UrbanPulseDashboard() {
     setLoadingImages(true);
     try {
       const data = await concernService.getConcernImages(concern.id);
-      setConcernImages(Array.isArray(data) ? data : []);
+      const fetchedImages = Array.isArray(data) ? data : (data?.images || []);
+
+      if (fetchedImages.length === 0 && (concern.image_url || concern.images)) {
+        const fallbackList = concern.image_url
+          ? [concern.image_url]
+          : Array.isArray(concern.images)
+          ? concern.images
+          : [];
+        setConcernImages(fallbackList);
+      } else {
+        setConcernImages(fetchedImages);
+      }
     } catch (err) {
       console.error("Failed to fetch concern images", err);
-      setConcernImages([]);
+      if (concern.image_url) {
+        setConcernImages([concern.image_url]);
+      } else {
+        setConcernImages([]);
+      }
     } finally {
       setLoadingImages(false);
     }
@@ -524,7 +590,10 @@ export default function UrbanPulseDashboard() {
 
   const updateConcernStatus = async (concernId, newStatus) => {
     try {
-      await concernService.updateConcernStatus(concernId, newStatus);
+      // Normalize status to lowercase to pass backend validation
+      const apiStatus = newStatus.toLowerCase(); 
+      await concernService.updateConcernStatus(concernId, apiStatus);
+
       setConcerns((prev) =>
         prev.map((c) => (c.id === concernId ? { ...c, status: newStatus } : c))
       );
@@ -646,7 +715,6 @@ export default function UrbanPulseDashboard() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Notification Dropdown Component */}
             <NotificationDropdown />
 
             <div className="w-px h-8 bg-white/15" />
@@ -705,7 +773,6 @@ export default function UrbanPulseDashboard() {
       {/* Floating Navigation Cards */}
       <section className="max-w-6xl mx-auto px-6 pt-8 pb-2 relative z-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Users Card */}
           <button
             onClick={() => setActiveTab("users")}
             className={`group relative rounded-2xl border shadow-lg px-5 py-4 flex items-center gap-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
@@ -730,7 +797,6 @@ export default function UrbanPulseDashboard() {
             </div>
           </button>
 
-          {/* Concerns Card */}
           <button
             onClick={() => setActiveTab("concerns")}
             className={`group relative rounded-2xl border shadow-lg px-5 py-4 flex items-center gap-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
@@ -755,7 +821,6 @@ export default function UrbanPulseDashboard() {
             </div>
           </button>
 
-          {/* Routes & Map Card */}
           <button
             onClick={() => setActiveTab("routes")}
             className={`group relative rounded-2xl border shadow-lg px-5 py-4 flex items-center gap-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
@@ -780,7 +845,6 @@ export default function UrbanPulseDashboard() {
             </div>
           </button>
 
-          {/* Suggestion Review Card */}
           <button
             onClick={() => setActiveTab("suggestions")}
             className={`group relative rounded-2xl border shadow-lg px-5 py-4 flex items-center gap-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
@@ -1103,8 +1167,10 @@ export default function UrbanPulseDashboard() {
                   <thead>
                     <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wide">
                       <th className="text-left font-semibold px-5 py-3">ID</th>
-                      <th className="text-left font-semibold px-5 py-3">Title</th>
-                      <th className="text-left font-semibold px-5 py-3">Reporter</th>
+                      <th className="text-left font-semibold px-5 py-3">Category</th>
+                      <th className="text-left font-semibold px-5 py-3">Location</th>
+                      <th className="text-left font-semibold px-5 py-3">Reported Date</th>
+                      <th className="text-left font-semibold px-5 py-3">Priority</th>
                       <th className="text-left font-semibold px-5 py-3">Status</th>
                       <th className="text-left font-semibold px-5 py-3">Actions</th>
                     </tr>
@@ -1119,17 +1185,23 @@ export default function UrbanPulseDashboard() {
                           #{c.id}
                         </td>
                         <td className="px-5 py-3 font-medium text-gray-800">
-                          {c.title || `Concern #${c.id}`}
+                          {getCategoryLabel(c.category) || c.title || `Concern #${c.id}`}
                         </td>
-                        <td className="px-5 py-3 text-gray-500">
-                          {c.user_email || c.reporter || "Citizen"}
+                        <td className="px-5 py-3 text-gray-500 font-mono text-xs">
+                          {formatLocation(c.location)}
+                        </td>
+                        <td className="px-5 py-3 text-gray-500 text-xs">
+                          {formatDate(c.reported_date || c.created_at || c.date)}
+                        </td>
+                        <td className="px-5 py-3">
+                          <PriorityBadge priority={c.priority} />
                         </td>
                         <td className="px-5 py-3">
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                              c.status === "Resolved"
+                              c.status === "Resolved" || c.status === "resolved"
                                 ? "bg-emerald-100 text-emerald-700"
-                                : c.status === "In Progress"
+                                : c.status === "In Progress" || c.status === "in_progress"
                                 ? "bg-blue-100 text-blue-700"
                                 : "bg-amber-100 text-amber-700"
                             }`}
@@ -1145,7 +1217,7 @@ export default function UrbanPulseDashboard() {
                             >
                               <Eye className="w-3.5 h-3.5" /> View Details
                             </button>
-                            {c.status !== "Resolved" && (
+                            {c.status !== "Resolved" && c.status !== "resolved" && (
                               <button
                                 onClick={() => updateConcernStatus(c.id, "Resolved")}
                                 className="flex items-center gap-1 text-xs font-medium text-emerald-600 border border-emerald-200 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors"
@@ -1160,7 +1232,7 @@ export default function UrbanPulseDashboard() {
                     {filteredConcerns.length === 0 && (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={7}
                           className="px-5 py-10 text-center text-gray-400 text-sm"
                         >
                           No concerns match your current filters.
@@ -1652,7 +1724,7 @@ export default function UrbanPulseDashboard() {
                 #{viewConcern.id}
               </span>
               <h2 className="text-lg font-bold text-[#0B3D2E]">
-                {viewConcern.title || `Concern #${viewConcern.id}`}
+                {getCategoryLabel(viewConcern.category) || viewConcern.title || `Concern #${viewConcern.id}`}
               </h2>
             </div>
             <button
@@ -1664,15 +1736,32 @@ export default function UrbanPulseDashboard() {
           </div>
 
           <div className="space-y-3 text-xs mb-5">
-            <p className="text-gray-600">
-              <strong className="text-gray-800">Status:</strong>{" "}
-              <span className="font-semibold text-amber-700">
-                {viewConcern.status || "Pending"}
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">
+                <strong className="text-gray-800">Status:</strong>{" "}
+                <span className="font-semibold text-amber-700">
+                  {viewConcern.status || "Pending"}
+                </span>
               </span>
+              <div>
+                <strong className="text-gray-800 mr-1.5">Priority:</strong>
+                <PriorityBadge priority={viewConcern.priority} />
+              </div>
+            </div>
+
+            <p className="text-gray-600">
+              <strong className="text-gray-800">Location:</strong>{" "}
+              <span className="font-mono">{formatLocation(viewConcern.location)}</span>
             </p>
+
+            <p className="text-gray-600">
+              <strong className="text-gray-800 font-sans">Reported Date:</strong>{" "}
+              {formatDate(viewConcern.reported_date || viewConcern.created_at || viewConcern.date)}
+            </p>
+
             {viewConcern.description && (
               <p className="text-gray-600">
-                <strong className="text-gray-800">Description:</strong>{" "}
+                <strong className="text-gray-800 font-sans">Description:</strong>{" "}
                 {viewConcern.description}
               </p>
             )}
@@ -1686,14 +1775,21 @@ export default function UrbanPulseDashboard() {
               <p className="text-xs text-gray-400">Loading images...</p>
             ) : concernImages.length > 0 ? (
               <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                {concernImages.map((img, idx) => (
-                  <img
-                    key={img.id || idx}
-                    src={img.url || img}
-                    alt="Concern proof"
-                    className="w-full h-28 object-cover rounded-xl border"
-                  />
-                ))}
+                {concernImages.map((img, idx) => {
+                  const imageUrl = typeof img === 'string' ? img : (img.image_url || img.url || img.file_path);
+                  return (
+                    <img
+                      key={img.id || idx}
+                      src={imageUrl}
+                      alt="Concern proof"
+                      className="w-full h-28 object-cover rounded-xl border border-gray-200"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://via.placeholder.com/150?text=Image+Unavailable";
+                      }}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <p className="text-xs text-gray-400">No images attached.</p>
@@ -1701,7 +1797,7 @@ export default function UrbanPulseDashboard() {
           </div>
 
           <div className="flex items-center gap-2">
-            {viewConcern.status !== "Resolved" && (
+            {viewConcern.status !== "Resolved" && viewConcern.status !== "resolved" && (
               <button
                 onClick={() => updateConcernStatus(viewConcern.id, "Resolved")}
                 className="flex-1 py-2 bg-emerald-600 text-white font-medium text-xs rounded-xl hover:bg-emerald-700"
