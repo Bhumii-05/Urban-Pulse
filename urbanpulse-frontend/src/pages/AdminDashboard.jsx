@@ -18,7 +18,6 @@ import {
   Shield,
   User as UserIcon,
   LogOut,
-  
   CheckCircle2,
   Users,
   Map as MapIcon,
@@ -43,7 +42,7 @@ import { useNavigate } from "react-router-dom";
 /*  Background image                                                   */
 /* ------------------------------------------------------------------ */
 const BACKGROUND_IMAGE_URL =
-  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5Ojf/2wBDAQoKCg0MDRoPDxo3JR8lNzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzf/wAARCAONBkADASIAAhEBAxEB/8QAGwABAQADAQEBAAAAAAAAAAAAAAECAwQFBgf/xABCEAEAAgIBAgQEAwYDCAICAAcAAQIDEQQSIQUxQVETImFxMoGRBhQjQlJwM6GxFSRDYoKSwdE0RFNUc+EWJWOi8P/EABoBAQEBAQEBAQAAAAAAAAAAAAABAgMEBQb/xAAvEQEBAAIBAwQCAgEEAQUBAAAAAQIRAxIhMQQTQVEUMiJhBSNScYFCkpMH/xAAAEAEBAQEBAAAAAAAAAAAAAAABAhEAMf/aAAwDAQACEAMBB4A3YAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/Z";
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5Ojf/2wBDAQoKCg0MDRoPDxo3JR8lNzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzf/wAARCAONBkADASIAAhEBAxEB/8QAGwABAQADAQEBAAAAAAAAAAAAAAECAwQFBgf/xABCEAEAAgIBAgQEAwYDCAICAAcAAQIDEQQSIQUxQVETImFxMoGRBhQjQlJwM6GxFSRDYoKSwdE0RFNUc+EWJWOi8P/EABoBAQEBAQEBAQAAAAAAAAAAAAABAgMEBQb/xAAvEQEBAAIBAwQCAgEEAQUBAAAAAQIRAxIhMQQTQVEUMiJhBSNScYFCkpMH/xAAAEAEBAQEBAAAAAAAAAAAAAAABAhEAMf/aAAw0BAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/Z";
 
 /* ------------------------------------------------------------------ */
 /*  Options / Constants                                                */
@@ -52,7 +51,13 @@ const ROLES = ["Admin", "Worker"];
 const ROLE_FILTERS = ["All", "Admin", "Worker", "Citizen"];
 const STATUS_FILTERS = ["All", "Active", "Inactive"];
 const CONCERN_STATUS_FILTERS = ["All", "Pending", "In Progress", "Resolved"];
-const SUGGESTION_STATUS_FILTERS = ["All", "Pending", "Approved", "Rejected"];
+const SUGGESTION_STATUS_FILTERS = [
+  "All",
+  "Pending",
+  "Reviewed",
+  "Accepted",
+  "Rejected",
+];
 
 const DATE_RANGES = ["Today", "Last 7 days", "Last 30 days"];
 const PAGE_SIZE = 4;
@@ -123,6 +128,21 @@ function StatusPill({ status }) {
     </span>
   );
 }
+
+const getSuggestionStatusBadge = (status = "pending") => {
+  const normalized = status.toLowerCase();
+  switch (normalized) {
+    case "accepted":
+      return { label: "Accepted", className: "bg-emerald-100 text-emerald-700" };
+    case "reviewed":
+      return { label: "Reviewed", className: "bg-blue-100 text-blue-700" };
+    case "rejected":
+      return { label: "Rejected", className: "bg-red-100 text-red-700" };
+    case "pending":
+    default:
+      return { label: "Pending", className: "bg-purple-100 text-purple-700" };
+  }
+};
 
 /* ------------------------------------------------------------------ */
 /*  Toast                                                              */
@@ -263,7 +283,9 @@ export default function UrbanPulseDashboard() {
       }));
       setUsers(normalized);
     } catch (err) {
-      fireToast(err.response?.data?.detail || "Failed to load users from backend");
+      fireToast(
+        err.response?.data?.detail || "Failed to load users from backend"
+      );
     }
   };
 
@@ -276,7 +298,8 @@ export default function UrbanPulseDashboard() {
           totalUsers: data.total_users ?? data.totalUsers ?? 0,
           totalWorkers: data.total_workers ?? data.totalWorkers ?? 0,
           pendingConcerns: data.pending_concerns ?? data.pendingConcerns ?? 0,
-          resolvedConcerns: data.resolved_concerns ?? data.resolvedConcerns ?? 0,
+          resolvedConcerns:
+            data.resolved_concerns ?? data.resolvedConcerns ?? 0,
           completedRoutes: data.completed_routes ?? data.completedRoutes ?? 0,
         });
       }
@@ -346,7 +369,8 @@ export default function UrbanPulseDashboard() {
         (c.id || "").toString().includes(concernSearch);
       const matchesStatus =
         concernStatusFilter === "All" ||
-        (c.status || "Pending").toLowerCase() === concernStatusFilter.toLowerCase();
+        (c.status || "Pending").toLowerCase() ===
+          concernStatusFilter.toLowerCase();
       return matchesSearch && matchesStatus;
     });
   }, [concerns, concernSearch, concernStatusFilter]);
@@ -355,10 +379,13 @@ export default function UrbanPulseDashboard() {
     return suggestions.filter((s) => {
       const matchesSearch =
         (s.title || "").toLowerCase().includes(suggestionSearch.toLowerCase()) ||
-        (s.description || "").toLowerCase().includes(suggestionSearch.toLowerCase());
+        (s.description || "")
+          .toLowerCase()
+          .includes(suggestionSearch.toLowerCase());
       const matchesStatus =
         suggestionStatusFilter === "All" ||
-        (s.status || "Pending").toLowerCase() === suggestionStatusFilter.toLowerCase();
+        (s.status || "pending").toLowerCase() ===
+          suggestionStatusFilter.toLowerCase();
       return matchesSearch && matchesStatus;
     });
   }, [suggestions, suggestionSearch, suggestionStatusFilter]);
@@ -593,13 +620,13 @@ export default function UrbanPulseDashboard() {
     }
   };
 
-  const handleUpdateSuggestionStatus = async (suggestionId, status) => {
+  const handleUpdateSuggestionStatus = async (suggestionId, statusEnum) => {
     try {
-      await suggestionService.updateSuggestionStatus(suggestionId, status);
+      await suggestionService.updateSuggestionStatus(suggestionId, statusEnum);
       setSuggestions((prev) =>
-        prev.map((s) => (s.id === suggestionId ? { ...s, status } : s))
+        prev.map((s) => (s.id === suggestionId ? { ...s, status: statusEnum } : s))
       );
-      fireToast(`Suggestion marked as ${status}`);
+      fireToast(`Suggestion marked as ${statusEnum}`);
     } catch (err) {
       fireToast("Failed to update suggestion status");
     }
@@ -746,7 +773,7 @@ export default function UrbanPulseDashboard() {
                   >
                     <UserIcon className="w-4 h-4" /> Profile
                   </button>
-                  
+
                   <button
                     onClick={() => {
                       authService.logout();
@@ -1440,58 +1467,67 @@ export default function UrbanPulseDashboard() {
 
             {/* Suggestions List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredSuggestions.map((s) => (
-                <div
-                  key={s.id}
-                  className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-sm text-[#0B3D2E]">
-                        {s.title || `Suggestion #${s.id}`}
-                      </span>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                          s.status === "Approved"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : s.status === "Rejected"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-purple-100 text-purple-700"
-                        }`}
+              {filteredSuggestions.map((s) => {
+                const statusInfo = getSuggestionStatusBadge(s.status);
+                return (
+                  <div
+                    key={s.id}
+                    className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-sm text-[#0B3D2E]">
+                          {s.title || `Suggestion #${s.id}`}
+                        </span>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${statusInfo.className}`}
+                        >
+                          {statusInfo.label}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-gray-600 mb-3">
+                        {s.description || "No description provided."}
+                      </p>
+
+                      <div className="flex items-center gap-2 text-[11px] text-gray-500 bg-gray-50 p-2 rounded-xl mb-4 font-mono">
+                        <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                        <span>
+                          Lat: {s.latitude || s.lat || "22.5726"}, Lng:{" "}
+                          {s.longitude || s.lng || "88.3639"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-50">
+                      <button
+                        onClick={() =>
+                          handleUpdateSuggestionStatus(s.id, "accepted")
+                        }
+                        className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition"
                       >
-                        {s.status || "Pending"}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-gray-600 mb-3">
-                      {s.description || "No description provided."}
-                    </p>
-
-                    <div className="flex items-center gap-2 text-[11px] text-gray-500 bg-gray-50 p-2 rounded-xl mb-4 font-mono">
-                      <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span>
-                        Lat: {s.latitude || s.lat || "22.5726"}, Lng:{" "}
-                        {s.longitude || s.lng || "88.3639"}
-                      </span>
+                        <Check className="w-3.5 h-3.5" /> Accept
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleUpdateSuggestionStatus(s.id, "reviewed")
+                        }
+                        className="flex-1 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> Review
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleUpdateSuggestionStatus(s.id, "rejected")
+                        }
+                        className="flex-1 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition"
+                      >
+                        <XCircle className="w-3.5 h-3.5" /> Reject
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 pt-2 border-t border-gray-50">
-                    <button
-                      onClick={() => handleUpdateSuggestionStatus(s.id, "Approved")}
-                      className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition"
-                    >
-                      <Check className="w-3.5 h-3.5" /> Approve
-                    </button>
-                    <button
-                      onClick={() => handleUpdateSuggestionStatus(s.id, "Rejected")}
-                      className="flex-1 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition"
-                    >
-                      <XCircle className="w-3.5 h-3.5" /> Reject
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
 
               {filteredSuggestions.length === 0 && (
                 <div className="col-span-2 p-10 text-center text-xs text-gray-400 border border-dashed rounded-2xl bg-gray-50/50">
