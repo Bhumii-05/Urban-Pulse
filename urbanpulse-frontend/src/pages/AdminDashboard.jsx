@@ -18,7 +18,7 @@ import {
   Shield,
   User as UserIcon,
   LogOut,
-  Settings,
+  
   CheckCircle2,
   Users,
   Map as MapIcon,
@@ -746,12 +746,7 @@ export default function UrbanPulseDashboard() {
                   >
                     <UserIcon className="w-4 h-4" /> Profile
                   </button>
-                  <button
-                    onClick={() => setProfileOpen(false)}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                  >
-                    <Settings className="w-4 h-4" /> Settings
-                  </button>
+                  
                   <button
                     onClick={() => {
                       authService.logout();
