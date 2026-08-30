@@ -15,7 +15,7 @@ export const suggestionService = {
 
   // PATCH /api/v1/suggestions/{suggestion_id}/status - Approve / Reject
   updateSuggestionStatus: async (suggestionId, status) => {
-    const response = await api.patch(`/admin/suggestions/${suggestionId}/status`, { status });
+    const response = await api.patch(`/admin/suggestions/${suggestionId}`, { status });
     return response.data;
   },
 
