@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Leaf,
-  Bell,
   ChevronDown,
   Search,
   Plus,
@@ -35,18 +34,18 @@ import { concernService } from "../api/concern.service";
 import { routeService } from "../api/route.service";
 import { suggestionService } from "../api/suggestion.service";
 import { analyticsService } from "../api/analytics.service";
-import { notificationService } from "../api/notification.service";
+import NotificationDropdown from "../components/NotificationDropdown";
 import FloatingChatbot from "../components/FloatingChatbot";
 import { useNavigate } from "react-router-dom";
 
 /* ------------------------------------------------------------------ */
-/*  Background image                                                   */
+/*  Background image                                                  */
 /* ------------------------------------------------------------------ */
 const BACKGROUND_IMAGE_URL =
   "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5Ojf/2wBDAQoKCg0MDRoPDxo3JR8lNzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzf/wAARCAONBkADASIAAhEBAxEB/8QAGwABAQADAQEBAAAAAAAAAAAAAAECAwQFBgf/xABCEAEAAgIBAgQEAwYDCAICAAcAAQIDEQQSIQUxQVETImFxMoGRBhQjQlJwM6GxFSRDYoKSwdE0RFNUc+EWJWOi8P/EABoBAQEBAQEBAQAAAAAAAAAAAAABAgMEBQb/xAAvEQEBAAIBAwQCAgEEAQUBAAAAAQIRAxIhMQQTQVEUMiJhBSNScYFCkpMH/xAAAEAEBAQEBAAAAAAAAAAAAAAABAhEAMf/aAAwDAQACEAMBB4A3YAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/Z";
 
 /* ------------------------------------------------------------------ */
-/*  Options / Constants                                                */
+/*  Options / Constants                                               */
 /* ------------------------------------------------------------------ */
 const ROLES = ["Admin", "Worker"];
 const ROLE_FILTERS = ["All", "Admin", "Worker", "Citizen"];
@@ -58,7 +57,7 @@ const DATE_RANGES = ["Today", "Last 7 days", "Last 30 days"];
 const PAGE_SIZE = 4;
 
 /* ------------------------------------------------------------------ */
-/*  Small helpers                                                      */
+/*  Small helpers                                                     */
 /* ------------------------------------------------------------------ */
 function getInitials(name) {
   if (!name) return "U";
@@ -125,7 +124,7 @@ function StatusPill({ status }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Toast                                                              */
+/*  Toast                                                             */
 /* ------------------------------------------------------------------ */
 function Toast({ message }) {
   if (!message) return null;
@@ -140,17 +139,13 @@ function Toast({ message }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main component                                                     */
+/*  Main component                                                    */
 /* ------------------------------------------------------------------ */
 export default function UrbanPulseDashboard() {
   const navigate = useNavigate();
 
   // Navigation State
   const [activeTab, setActiveTab] = useState("users");
-
-  // Notification States
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   // User States
   const [users, setUsers] = useState([]);
@@ -209,7 +204,6 @@ export default function UrbanPulseDashboard() {
 
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
   const [dateRange, setDateRange] = useState(DATE_RANGES[0]);
-  const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [toast, setToast] = useState("");
 
@@ -220,28 +214,6 @@ export default function UrbanPulseDashboard() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(""), 2400);
   }
-
-  // Fetch Notifications
-  const fetchNotifications = async () => {
-    try {
-      const data = await notificationService.getNotifications();
-      const list = Array.isArray(data) ? data : data.notifications || [];
-      setNotifications(list);
-      setUnreadCount(list.filter((n) => !n.is_read && !n.read).length);
-    } catch (err) {
-      console.error("Failed to fetch notifications", err);
-    }
-  };
-
-  const handleMarkAllRead = async () => {
-    try {
-      await notificationService.markAllRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-      setUnreadCount(0);
-    } catch (err) {
-      console.error("Failed to mark notifications read", err);
-    }
-  };
 
   // Fetch Users and Current Admin Profile
   const fetchUsers = async () => {
@@ -307,7 +279,6 @@ export default function UrbanPulseDashboard() {
       await fetchRoutes();
       await fetchSuggestions();
       await fetchAnalyticsOverview();
-      await fetchNotifications();
     };
 
     initDashboard();
@@ -648,72 +619,14 @@ export default function UrbanPulseDashboard() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Notification Container */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setNotifOpen((o) => !o);
-                  setProfileOpen(false);
-                  if (!notifOpen) fetchNotifications();
-                }}
-                className="relative w-9 h-9 rounded-full flex items-center justify-center text-emerald-100 hover:bg-white/10 transition-colors"
-                aria-label="Notifications"
-              >
-                <Bell className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#0B3D2E]" />
-                )}
-              </button>
-
-              {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden animate-scaleIn origin-top-right z-50">
-                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between font-semibold text-sm text-gray-700">
-                    <span>Notifications</span>
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={handleMarkAllRead}
-                        className="text-[11px] text-emerald-600 hover:text-emerald-700 font-medium"
-                      >
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
-                    {notifications.length > 0 ? (
-                      notifications.map((item) => (
-                        <div
-                          key={item.id}
-                          className={`px-4 py-3 text-xs transition ${
-                            item.is_read
-                              ? "bg-white text-gray-500"
-                              : "bg-emerald-50/50 text-gray-800 font-medium"
-                          }`}
-                        >
-                          <p>{item.message || item.title}</p>
-                          <span className="text-[10px] text-gray-400 mt-1 block font-mono">
-                            {item.created_at || "Just now"}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-4 py-6 text-center text-xs text-gray-400">
-                        You're all caught up 🍃
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Notification Dropdown Component */}
+            <NotificationDropdown />
 
             <div className="w-px h-8 bg-white/15" />
 
             <div className="relative">
               <button
-                onClick={() => {
-                  setProfileOpen((o) => !o);
-                  setNotifOpen(false);
-                }}
+                onClick={() => setProfileOpen((o) => !o)}
                 className="flex items-center gap-2.5 hover:bg-white/10 rounded-full pl-1 pr-2 py-1 transition-colors"
               >
                 <Avatar
@@ -2042,7 +1955,7 @@ export default function UrbanPulseDashboard() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Shared bits                                                        */
+/*  Shared bits                                                       */
 /* ------------------------------------------------------------------ */
 function Field({ label, children }) {
   return (
