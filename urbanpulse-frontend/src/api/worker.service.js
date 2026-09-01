@@ -1,22 +1,34 @@
 import api from './axios';
+import { concernService } from './concern.service';
 
 export const workerService = {
-  // Expose underlying HTTP methods in case components invoke them directly
   get: (url, config) => api.get(url, config),
   post: (url, data, config) => api.post(url, data, config),
   patch: (url, data, config) => api.patch(url, data, config),
   delete: (url, config) => api.delete(url, config),
 
-  // High-level API helper functions
-  getAssignedRoute: async () => {
+  getWorkerDashboardStats: async () => {
+    try {
+      const response = await api.get('/dashboard/worker');
+      return response.data;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  getAllAssignedRoutes: async () => {
     const response = await api.get('/collection-routes');
-    const routes = Array.isArray(response.data) ? response.data : response.data.routes || [];
-    return routes.length > 0 ? routes[0] : null;
+    const routes = Array.isArray(response.data)
+      ? response.data
+      : response.data?.routes || response.data?.data || [];
+    return routes;
   },
 
   getRouteStops: async (routeId) => {
     const response = await api.get(`/collection-points/route/${routeId}`);
-    return Array.isArray(response.data) ? response.data : response.data.points || [];
+    return Array.isArray(response.data)
+      ? response.data
+      : response.data?.points || response.data?.data || [];
   },
 
   markStopCollected: async (pointId) => {
@@ -24,14 +36,14 @@ export const workerService = {
     return response.data;
   },
 
-  reportStopIssue: async ({ category, description, location, priority }) => {
-    const response = await api.post('/concerns/', {
+  reportStopIssue: async ({ title, category = "missed_pickup", description, location, priority = "high" }) => {
+    return await concernService.createConcern({
+      title,
       category,
       description,
       location,
       priority,
     });
-    return response.data;
   },
 };
 

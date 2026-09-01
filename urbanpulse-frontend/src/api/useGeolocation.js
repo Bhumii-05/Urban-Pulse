@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { coordsToLocationString } from '../api/location'
+import { coordsToLocationString } from '../api/location.service'
 
 /**
  * Requests the browser's real GPS location on mount and exposes it as the

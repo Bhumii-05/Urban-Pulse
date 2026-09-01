@@ -17,8 +17,10 @@ export const userService = {
     const response = await api.patch(`/admin/users/${id}`, userData);
     return response.data;
   },
-  toggleUserStatus: async (id) => {
-    const response = await api.patch(`/admin/users/${id}/status`);
+ toggleUserStatus: async (id, isActive) => {
+    const response = await api.patch(`/admin/users/${id}/status`, {
+      is_active: Boolean(isActive),
+    });
     return response.data;
   },
   deleteUser: async (id) => {
