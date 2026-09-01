@@ -26,10 +26,12 @@ class CollectionPoint(Base):
         index=True,
     )
 
-    waste_bin_id: Mapped[uuid.UUID] = mapped_column(
+    # Optional foreign key to allow arbitrary coordinate stops
+    waste_bin_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("waste_bins.id", ondelete="CASCADE"),
-        nullable=False,
+        ForeignKey("waste_bins.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
         index=True,
     )
 
@@ -65,7 +67,7 @@ class CollectionPoint(Base):
         back_populates="collection_points",
     )
 
-    waste_bin: Mapped["WasteBin"] = relationship(
+    waste_bin: Mapped["WasteBin | None"] = relationship(
         "WasteBin",
         back_populates="collection_points",
     )

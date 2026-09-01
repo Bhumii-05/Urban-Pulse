@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import UploadFile
@@ -101,7 +101,7 @@ def create_concern_image(
         concern_id=concern_id,
         image_url=cloudinary_result["secure_url"],
         cloudinary_public_id=cloudinary_result["public_id"],
-        uploaded_at=datetime.utcnow(),
+        uploaded_at=datetime.now(timezone.utc),
     )
 
     try:

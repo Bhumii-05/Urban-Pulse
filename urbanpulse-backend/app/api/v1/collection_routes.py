@@ -178,3 +178,37 @@ def update_collection_route_status(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error),
         )
+
+
+@router.delete(
+    "/{route_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_collection_route(
+    route_id: int,
+    current_user: User = Depends(
+        require_role(UserRole.ADMIN)
+    ),
+    db: Session = Depends(get_db),
+):
+    route = collection_route_service.get_collection_route_by_id(
+        db=db,
+        route_id=route_id,
+    )
+
+    if route is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Collection route not found",
+        )
+
+    try:
+        collection_route_service.delete_collection_route(
+            db=db,
+            route=route,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        )
