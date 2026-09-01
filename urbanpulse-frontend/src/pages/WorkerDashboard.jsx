@@ -1,468 +1,99 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Leaf,
-  LogOut,
-  Truck,
-  MapPin,
-  CheckCircle,
-  AlertTriangle,
-  Clock,
-  Map as MapIcon,
   Navigation,
-  X,
-  Send,
+  ClipboardList,
+  Map as MapIcon,
   Loader2,
   RefreshCw,
   Inbox,
-  CircleDot,
-  ChevronDown,
-  User as UserIcon,
-} from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { useNavigate } from 'react-router-dom';
+} from "lucide-react";
+import WorkerHeader from "../components/worker/WorkerHeader";
+import WorkerMetricStrip from "../components/worker/WorkerMetricStrip";
+import WorkerRouteSummary from "../components/worker/WorkerRouteSummary";
+import WorkerStopsTable from "../components/worker/WorkerStopsTable";
+import WorkerRouteMap from "../components/worker/WorkerRouteMap";
+import WorkerAssignmentsView from "../components/worker/WorkerAssignmentsView";
+import ReportIssueModal from "../components/worker/ReportIssueModal";
+import FloatingChatbot from "../components/FloatingChatbot";
 
-import NotificationDropdown from '../components/NotificationDropdown';
-import FloatingChatbot from '../components/FloatingChatbot';
-
-import { workerService } from '../api/worker.service.js';
-import { authService } from '../api/auth.service.js';
+import { workerService } from "../api/worker.service";
+import { assignmentService } from "../api/assignment.service";
+import { concernService } from "../api/concern.service";
+import { authService } from "../api/auth.service";
+import { coordsToLocationString } from "../api/location.service";
 
 /* ------------------------------------------------------------------ */
-/*  Theme & Helpers                                                   */
+/* Helpers & Location Resolvers                                       */
 /* ------------------------------------------------------------------ */
-
-const THEME = {
-  deepForest: '#0B3D2E',
-  darkGreen: '#064E3B',
-  emerald: '#059669',
-  lightEmerald: '#D1FAE5',
-  amber: '#F59E0B',
-  lightAmber: '#FEF3C7',
-  red: '#DC2626',
-  lightRed: '#FEE2E2',
-};
-
-function getInitials(name) {
-  if (!name) return 'W';
-  return name
-    .split(' ')
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-}
-
-function Avatar({ name, size = 'w-9 h-9 text-xs' }) {
-  return (
-    <div
-      className={`${size} bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold shrink-0 shadow-sm ring-2 ring-white`}
-    >
-      {getInitials(name)}
-    </div>
-  );
-}
-
-const isNum = (v) => typeof v === 'number' && !Number.isNaN(v);
-
-function unwrapResponse(res) {
-  if (res && typeof res === 'object' && 'data' in res && !Array.isArray(res)) {
-    return res.data;
-  }
-  return res;
-}
-
-function toArray(payload, keys = ['results', 'routes', 'data', 'items', 'stops', 'points', 'collection_points']) {
-  if (Array.isArray(payload)) return payload;
-  if (payload && typeof payload === 'object') {
-    for (const key of keys) {
-      if (Array.isArray(payload[key])) return payload[key];
-    }
-  }
-  return null;
-}
-
-function extractAssignedRoute(payload) {
-  if (!payload) return null;
-  const list = toArray(payload);
-  if (list) {
-    if (list.length === 0) return null;
-    const active = list.find((r) => {
-      const s = (r?.status ?? r?.route_status ?? r?.routeStatus ?? '').toString().toLowerCase();
-      return s.includes('active') || s.includes('assigned') || s.includes('progress') || s.includes('ongoing');
-    });
-    return active || list[0];
-  }
-  if (typeof payload === 'object') return payload;
-  return null;
-}
-
-function extractStopsList(payload) {
-  if (!payload) return [];
-  const list = toArray(payload);
-  if (list) return list;
-  if (typeof payload === 'object') return [payload];
-  return [];
-}
-
-const getRouteId = (route) => route?.id ?? route?.route_id ?? route?.routeId ?? route?._id ?? null;
-
-const getRouteNumber = (route) =>
-  route?.route_number ?? route?.routeNumber ?? route?.number ?? route?.code ?? getRouteId(route) ?? '—';
-
-const getRouteName = (route) =>
-  route?.route_name ?? route?.routeName ?? route?.name ?? route?.ward ?? route?.area ?? route?.zone ?? '';
-
-const getStopId = (stop) => stop?.id ?? stop?._id ?? stop?.point_id ?? stop?.pointId ?? null;
-
-const getStopLocation = (stop) =>
-  stop?.location ?? stop?.name ?? stop?.address ?? stop?.location_name ?? stop?.locationName ?? stop?.title ?? 'Unnamed location';
-
-const getStopEta = (stop) =>
-  stop?.estimated_arrival ?? stop?.estimatedArrival ?? stop?.eta ?? stop?.arrival_time ?? stop?.arrivalTime ?? null;
-
-const getIssueReason = (stop) =>
-  stop?.issue_reason ?? stop?.issueReason ?? stop?.reason ?? stop?.concern_description ?? stop?.concernDescription ?? null;
-
-function normalizeStatus(raw) {
-  const s = (raw ?? '').toString().toLowerCase();
-  if (!s) return 'pending';
-  if (s.includes('issue') || s.includes('report') || s.includes('problem')) return 'issue';
-  if (s.includes('collect') || s.includes('done') || s.includes('complete')) return 'collected';
-  return 'pending';
-}
+const isNum = (v) => typeof v === "number" && !Number.isNaN(v);
 
 function getStopCoords(stop) {
-  const c = stop?.coordinates ?? stop?.coords ?? stop?.location_coordinates ?? stop?.locationCoordinates ?? null;
-
+  const c = stop?.coordinates ?? stop?.coords ?? null;
   if (Array.isArray(c) && c.length >= 2 && isNum(c[0]) && isNum(c[1])) {
-    const [a, b] = c;
-    if (Math.abs(a) > 90 && Math.abs(b) <= 90) {
-      return { lat: b, lng: a };
-    }
-    if (Math.abs(b) > 90 && Math.abs(a) <= 90) {
-      return { lat: a, lng: b };
-    }
-    return { lat: b, lng: a };
+    return { lat: c[0], lng: c[1] };
   }
-
-  if (c && typeof c === 'object' && !Array.isArray(c)) {
+  if (c && typeof c === "object") {
     const lat = c.lat ?? c.latitude;
-    const lng = c.lng ?? c.lon ?? c.long ?? c.longitude;
+    const lng = c.lng ?? c.longitude;
     if (isNum(lat) && isNum(lng)) return { lat, lng };
   }
-
   const lat = stop?.latitude ?? stop?.lat;
-  const lng = stop?.longitude ?? stop?.lng ?? stop?.lon;
-  if (isNum(lat) && isNum(lng)) return { lat, lng };
-
+  const lng = stop?.longitude ?? stop?.lng;
+  if (isNum(lat) && isNum(lng)) return { lat: Number(lat), lng: Number(lng) };
   return null;
+}
+
+function resolveStopLocation(stop, index) {
+  if (
+    stop?.location &&
+    typeof stop.location === "string" &&
+    stop.location.trim() &&
+    stop.location !== "Unnamed location"
+  ) {
+    return stop.location;
+  }
+  if (stop?.address || stop?.location_name || stop?.title) {
+    return stop.address || stop.location_name || stop.title;
+  }
+  const coords = getStopCoords(stop);
+  if (coords) {
+    return coordsToLocationString(coords.lat.toFixed(4), coords.lng.toFixed(4));
+  }
+  if (stop?.waste_bin_id) {
+    return `Bin #${stop.waste_bin_id}`;
+  }
+  return `Stop #${stop?.sequence_order ?? index + 1}`;
 }
 
 function normalizeStop(stop, index) {
   return {
-    id: getStopId(stop),
-    row: index + 1,
-    location: getStopLocation(stop),
-    eta: getStopEta(stop),
-    status: normalizeStatus(stop?.status ?? stop?.state ?? stop?.collection_status),
-    issueReason: getIssueReason(stop),
+    id: stop?.id ?? stop?._id ?? index + 1,
+    row: stop?.sequence_order ?? index + 1,
+    location: resolveStopLocation(stop, index),
+    eta: stop?.estimated_arrival ?? stop?.eta ?? null,
+    status:
+      stop?.is_collected || String(stop?.status).toLowerCase() === "collected"
+        ? "collected"
+        : String(stop?.status).toLowerCase() === "issue"
+        ? "issue"
+        : "pending",
+    issueReason: stop?.issue_reason ?? null,
     coords: getStopCoords(stop),
     raw: stop,
   };
 }
 
 /* ------------------------------------------------------------------ */
-/*  Toast system & Sub-components                                     */
+/* Main Dashboard Component                                           */
 /* ------------------------------------------------------------------ */
-
-function useToasts() {
-  const [toasts, setToasts] = useState([]);
-  const timers = useRef({});
-
-  const remove = useCallback((id) => {
-    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
-    window.setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 300);
-  }, []);
-
-  const push = useCallback(
-    (type, message) => {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      setToasts((prev) => [...prev, { id, type, message, leaving: false }]);
-      timers.current[id] = window.setTimeout(() => remove(id), 4000);
-    },
-    [remove]
-  );
-
-  useEffect(
-    () => () => {
-      Object.values(timers.current).forEach((t) => window.clearTimeout(t));
-    },
-    []
-  );
-
-  return { toasts, push, remove };
-}
-
-function ToastStack({ toasts, onDismiss }) {
-  return (
-    <div className="fixed top-6 right-6 z-[1000] flex flex-col gap-3 w-[min(360px,calc(100vw-3rem))]">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className={`flex items-start gap-3 rounded-xl border px-4 py-3 shadow-2xl backdrop-blur-md transition-all duration-300 ease-out
-          ${t.leaving ? 'opacity-0 translate-x-6' : 'opacity-100 translate-x-0'}
-          ${
-            t.type === 'success'
-              ? 'bg-emerald-50/95 border-emerald-300 text-emerald-900'
-              : 'bg-red-50/95 border-red-300 text-red-900'
-          }`}
-        >
-          {t.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 mt-0.5 shrink-0 text-emerald-600" />
-          ) : (
-            <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0 text-red-600" />
-          )}
-          <p className="text-sm font-medium leading-snug flex-1">{t.message}</p>
-          <button
-            onClick={() => onDismiss(t.id)}
-            className="opacity-60 hover:opacity-100 transition-opacity"
-            aria-label="Dismiss notification"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function CircularProgress({ completed, total }) {
-  const radius = 34;
-  const circumference = 2 * Math.PI * radius;
-  const pct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
-  const offset = circumference - (pct / 100) * circumference;
-
-  return (
-    <div className="flex items-center gap-4">
-      <div className="relative w-20 h-20 shrink-0">
-        <svg width="80" height="80" viewBox="0 0 80 80" className="-rotate-90">
-          <circle cx="40" cy="40" r={radius} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="8" />
-          <circle
-            cx="40"
-            cy="40"
-            r={radius}
-            fill="none"
-            stroke="#D1FAE5"
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            style={{ transition: 'stroke-dashoffset 0.6s ease' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-white text-sm font-bold">{pct}%</span>
-        </div>
-      </div>
-      <div className="text-right">
-        <p className="text-xs uppercase tracking-wide text-emerald-100/80 font-medium">Progress</p>
-        <p className="text-lg font-bold text-white leading-tight">
-          {completed}/{total} Completed
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function StatusBadge({ status, issueReason }) {
-  if (status === 'collected') {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
-        <CheckCircle className="w-3.5 h-3.5" />
-        Collected
-      </span>
-    );
-  }
-  if (status === 'issue') {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
-        <AlertTriangle className="w-3.5 h-3.5" />
-        Issue Reported{issueReason ? ` (${issueReason})` : ''}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-      <CircleDot className="w-3.5 h-3.5" />
-      Pending
-    </span>
-  );
-}
-
-const MARKER_COLORS = {
-  collected: THEME.emerald,
-  pending: THEME.amber,
-  issue: THEME.red,
-};
-
-function createNumberedIcon(number, color) {
-  return L.divIcon({
-    className: 'urbanpulse-marker',
-    html: `
-      <div style="
-        width:30px;height:30px;
-        border-radius:50% 50% 50% 0;
-        background:${color};
-        border:2px solid #ffffff;
-        box-shadow:0 2px 6px rgba(0,0,0,0.35);
-        transform:rotate(-45deg);
-        display:flex;align-items:center;justify-content:center;
-      ">
-        <span style="
-          transform:rotate(45deg);
-          color:#ffffff;font-weight:700;font-size:12px;font-family:sans-serif;
-        ">${number}</span>
-      </div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 30],
-    popupAnchor: [0, -28],
-  });
-}
-
-function FitBounds({ positions }) {
-  const map = useMap();
-  useEffect(() => {
-    if (!positions || positions.length === 0) return;
-    if (positions.length === 1) {
-      map.setView(positions[0], 15);
-    } else {
-      const bounds = L.latLngBounds(positions);
-      map.fitBounds(bounds, { padding: [48, 48] });
-    }
-  }, [positions, map]);
-  return null;
-}
-
-function RouteMap({ stops }) {
-  const stopsWithCoords = useMemo(() => stops.filter((s) => s.coords), [stops]);
-  const positions = useMemo(() => stopsWithCoords.map((s) => [s.coords.lat, s.coords.lng]), [stopsWithCoords]);
-
-  if (stopsWithCoords.length === 0) {
-    return (
-      <div className="w-full h-[420px] rounded-2xl bg-emerald-950/40 border border-white/10 flex flex-col items-center justify-center text-center px-6">
-        <MapIcon className="w-10 h-10 text-emerald-200/50 mb-3" />
-        <p className="text-emerald-50 font-semibold">Location coordinates are not available for this route.</p>
-        <p className="text-emerald-100/60 text-sm mt-1">Stops will appear on the map once coordinate data is provided by the API.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full h-[420px] rounded-2xl overflow-hidden border border-white/10 shadow-xl">
-      <MapContainer center={positions[0]} zoom={14} scrollWheelZoom style={{ width: '100%', height: '100%' }}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <FitBounds positions={positions} />
-        <Polyline positions={positions} pathOptions={{ color: THEME.emerald, weight: 4, opacity: 0.85 }} />
-        {stopsWithCoords.map((s) => (
-          <Marker
-            key={s.id ?? s.row}
-            position={[s.coords.lat, s.coords.lng]}
-            icon={createNumberedIcon(s.row, MARKER_COLORS[s.status])}
-          >
-            <Popup>
-              <div style={{ fontFamily: 'sans-serif', minWidth: 160 }}>
-                <p style={{ fontWeight: 700, marginBottom: 4 }}>
-                  Stop #{s.row} — {s.location}
-                </p>
-                <p style={{ margin: 0, textTransform: 'capitalize' }}>
-                  Status: <strong>{s.status === 'issue' ? 'Issue reported' : s.status}</strong>
-                </p>
-                {s.status === 'issue' && s.issueReason && <p style={{ margin: '4px 0 0', color: THEME.red }}>Reason: {s.issueReason}</p>}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-    </div>
-  );
-}
-
-function ReportIssueModal({ stop, onClose, onSubmit, submitting }) {
-  const [reason, setReason] = useState('');
-
-  if (!stop) return null;
-
-  const disabled = reason.trim().length === 0 || submitting;
-
-  return (
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-emerald-100 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#0B3D2E] to-[#064E3B]">
-          <div>
-            <h3 className="text-white font-bold text-lg flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-300" />
-              Report Issue
-            </h3>
-            <p className="text-emerald-100/80 text-sm mt-0.5">{stop.location}</p>
-          </div>
-          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors" aria-label="Close">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <label className="block text-sm font-medium text-gray-700">Issue description</label>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={4}
-            placeholder="Describe the issue (e.g. House Locked, Damaged Bin, Road Blocked)"
-            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
-            disabled={submitting}
-          />
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              onClick={onClose}
-              disabled={submitting}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onSubmit(reason.trim())}
-              disabled={disabled}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Submit Issue
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Main Component                                                    */
-/* ------------------------------------------------------------------ */
-
 export default function WorkerDashboard() {
-  const navigate = useNavigate();
-  const { toasts, push: pushToast, remove: removeToast } = useToasts();
+  const [userName, setUserName] = useState("Worker");
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [activeTab, setActiveTab] = useState("route"); // "route" | "concerns"
 
-  const [userName, setUserName] = useState('Worker');
-  const [profileOpen, setProfileOpen] = useState(false);
-
-  const [route, setRoute] = useState(null);
+  // Route & Stops States
+  const [routesList, setRoutesList] = useState([]);
+  const [selectedRoute, setSelectedRoute] = useState(null);
   const [routeLoading, setRouteLoading] = useState(true);
   const [routeError, setRouteError] = useState(null);
 
@@ -470,410 +101,398 @@ export default function WorkerDashboard() {
   const [stopsLoading, setStopsLoading] = useState(false);
   const [stopsError, setStopsError] = useState(null);
 
-  const [mapOpen, setMapOpen] = useState(false);
-  const [actionLoadingId, setActionLoadingId] = useState(null);
+  // Concern Assignments State
+  const [assignments, setAssignments] = useState([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
 
+  // UI Interactive States
+  const [mapOpen, setMapOpen] = useState(true);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
   const [issueModalStop, setIssueModalStop] = useState(null);
   const [submittingIssue, setSubmittingIssue] = useState(false);
 
-  const routeId = getRouteId(route);
-
-  /* Load logged-in user profile asynchronously */
+  // 1. Resolve Logged-in User Profile
   useEffect(() => {
     const fetchUser = async () => {
       try {
         let current = null;
-        if (typeof authService?.getCurrentUser === 'function') {
+        if (typeof authService?.getCurrentUser === "function") {
           current = await authService.getCurrentUser();
         }
-
         if (!current) {
-          const storedUser = localStorage.getItem('user');
-          current = storedUser ? JSON.parse(storedUser) : (authService?.currentUser ?? null);
+          const stored = localStorage.getItem("user");
+          current = stored ? JSON.parse(stored) : null;
         }
-
-        const name =
-          current?.full_name ??
-          current?.fullName ??
-          current?.name ??
-          current?.username ??
-          current?.user?.full_name ??
-          current?.user?.name;
-
-        if (name) {
-          setUserName(name);
-        }
+        const name = current?.full_name ?? current?.name ?? current?.email;
+        const uid = current?.id ?? current?.user_id ?? current?._id;
+        if (name) setUserName(name);
+        if (uid != null) setCurrentUserId(Number(uid));
       } catch (e) {
-        console.error('Failed to resolve logged in user:', e);
+        console.error("Worker load user error:", e);
       }
     };
-
     fetchUser();
   }, []);
 
-  /* Load route */
-  const loadRoute = useCallback(async () => {
+  // 2. Fetch All Assigned Routes
+  const loadRoutes = useCallback(async () => {
     setRouteLoading(true);
     setRouteError(null);
     try {
-      const res = await workerService.get('/collection-routes');
-      const data = unwrapResponse(res);
-      const assigned = extractAssignedRoute(data);
-      setRoute(assigned);
+      const routes = await workerService.getAllAssignedRoutes();
+      const list = Array.isArray(routes) ? routes : [];
+      setRoutesList(list);
+      if (list.length > 0) {
+        setSelectedRoute((prev) =>
+          prev ? list.find((r) => r.id === prev.id) || list[0] : list[0]
+        );
+      } else {
+        setSelectedRoute(null);
+      }
     } catch (err) {
-      setRouteError(err?.response?.data?.message ?? err?.message ?? 'Failed to load your assigned route.');
+      setRouteError("Failed to load your assigned collection routes.");
     } finally {
       setRouteLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadRoute();
-  }, [loadRoute]);
-
-  /* Load stops */
+  // 3. Fetch Stops for Selected Route
   const loadStops = useCallback(async () => {
-    if (!routeId) return;
+    const routeId = selectedRoute?.id ?? selectedRoute?.route_id;
+    if (!routeId) {
+      setStops([]);
+      return;
+    }
     setStopsLoading(true);
     setStopsError(null);
     try {
-      const res = await workerService.get(`/collection-points/route/${routeId}`);
-      const data = unwrapResponse(res);
-      const list = extractStopsList(data);
+      const rawPoints = await workerService.getRouteStops(routeId);
+      const list = Array.isArray(rawPoints) ? rawPoints : [];
       setStops(list.map(normalizeStop));
     } catch (err) {
-      setStopsError(err?.response?.data?.message ?? err?.message ?? 'Failed to load collection stops.');
+      setStopsError("Failed to load collection stops for this route.");
     } finally {
       setStopsLoading(false);
     }
-  }, [routeId]);
+  }, [selectedRoute]);
+
+  // 4. Fetch Concern Assignments and Join Concern Data
+  const loadAssignments = useCallback(async () => {
+    setAssignmentsLoading(true);
+    try {
+      const [rawAssignments, rawConcerns] = await Promise.allSettled([
+        assignmentService.getAssignments(),
+        concernService.getAllConcerns(),
+      ]);
+
+      const assignmentList =
+        rawAssignments.status === "fulfilled" && Array.isArray(rawAssignments.value)
+          ? rawAssignments.value
+          : [];
+
+      const concernList =
+        rawConcerns.status === "fulfilled" && Array.isArray(rawConcerns.value)
+          ? rawConcerns.value
+          : [];
+
+      // Filter by current worker ID if available
+      const workerAssignments = assignmentList.filter((a) => {
+        if (!currentUserId) return true;
+        const wId = a.worker_id ?? a.user_id;
+        return wId ? Number(wId) === Number(currentUserId) : true;
+      });
+
+      const mapped = workerAssignments.map((a) => {
+        const matchingConcern = concernList.find(
+          (c) => c.id === a.concern_id || c.id === a.point_id
+        );
+        return {
+          id: a.id,
+          concern_id: a.concern_id || matchingConcern?.id,
+          title: matchingConcern?.title || a.title || `Work Order #${a.id}`,
+          description:
+            matchingConcern?.description ||
+            a.description ||
+            "Assigned citizen concern",
+          location:
+            typeof matchingConcern?.location === "object"
+              ? coordsToLocationString(
+                  matchingConcern.location.latitude,
+                  matchingConcern.location.longitude
+                )
+              : matchingConcern?.location || a.location || "Assigned Location",
+          status: (a.status || "pending").toLowerCase(),
+          date: a.created_at
+            ? new Date(a.created_at).toLocaleDateString()
+            : "Today",
+        };
+      });
+
+      setAssignments(mapped);
+    } catch (e) {
+      setAssignments([]);
+    } finally {
+      setAssignmentsLoading(false);
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    loadRoutes();
+    loadAssignments();
+  }, [loadRoutes, loadAssignments]);
 
   useEffect(() => {
     loadStops();
   }, [loadStops]);
 
-  /* Derived progress */
-  const totalStops = stops.length;
-  const completedStops = useMemo(() => stops.filter((s) => s.status === 'collected').length, [stops]);
-
-  /* Actions */
-  const handleMarkDone = useCallback(
-    async (stop) => {
-      if (!stop.id || actionLoadingId) return;
-      setActionLoadingId(stop.id);
-      try {
-        await workerService.patch(`/collection-points/${stop.id}/collect`);
-        setStops((prev) => prev.map((s) => (s.id === stop.id ? { ...s, status: 'collected', issueReason: null } : s)));
-        pushToast('success', 'Stop marked as collected successfully.');
-      } catch (err) {
-        pushToast('error', err?.response?.data?.message ?? err?.message ?? 'Could not mark this stop as collected.');
-      } finally {
-        setActionLoadingId(null);
-      }
-    },
-    [actionLoadingId, pushToast]
+  // 5. Dynamic Derived Metric Computations
+  const completedStops = useMemo(
+    () => stops.filter((s) => s.status === "collected").length,
+    [stops]
   );
 
-  const handleOpenIssueModal = useCallback((stop) => {
-    setIssueModalStop(stop);
-  }, []);
-
-  const handleCloseIssueModal = useCallback(() => {
-    if (submittingIssue) return;
-    setIssueModalStop(null);
-  }, [submittingIssue]);
-
-  const handleSubmitIssue = useCallback(
-    async (reason) => {
-      if (!issueModalStop || !reason) return;
-      setSubmittingIssue(true);
-      try {
-        const payload = {
-          category: 'missed_pickup',
-          description: `Issue at ${issueModalStop.location}: ${reason}`,
-          location: issueModalStop.coords,
-          priority: 'high',
-        };
-        await workerService.post('/concerns/', payload);
-        setStops((prev) =>
-          prev.map((s) => (s.id === issueModalStop.id ? { ...s, status: 'issue', issueReason: reason } : s))
-        );
-        pushToast('success', 'Issue reported successfully.');
-        setIssueModalStop(null);
-      } catch (err) {
-        pushToast('error', err?.response?.data?.message ?? err?.message ?? 'Could not submit this issue.');
-      } finally {
-        setSubmittingIssue(false);
-      }
-    },
-    [issueModalStop, pushToast]
+  const activeAssignedConcernsCount = useMemo(
+    () =>
+      assignments.filter(
+        (a) => a.status !== "completed" && a.status !== "resolved"
+      ).length,
+    [assignments]
   );
 
-  const handleLogout = useCallback(async () => {
+  const issuesReportedCount = useMemo(
+    () => stops.filter((s) => s.status === "issue").length,
+    [stops]
+  );
+
+  // 6. Action Handlers
+  const handleMarkDone = async (stop) => {
+    if (!stop.id || actionLoadingId) return;
+    setActionLoadingId(stop.id);
     try {
-      await authService.logout();
-    } catch (e) {
-      // Proceed to redirect regardless
+      await workerService.markStopCollected(stop.id);
+      setStops((prev) =>
+        prev.map((s) =>
+          s.id === stop.id
+            ? { ...s, status: "collected", issueReason: null }
+            : s
+        )
+      );
+    } catch (err) {
+      console.error("Failed to mark stop as collected:", err);
     } finally {
-      window.location.href = '/login';
+      setActionLoadingId(null);
     }
-  }, []);
+  };
+
+  const handleSubmitIssue = async (reason) => {
+    if (!issueModalStop || !reason) return;
+    setSubmittingIssue(true);
+    try {
+      const locStr = issueModalStop.coords
+        ? `${Number(issueModalStop.coords.lat).toFixed(6)}, ${Number(
+            issueModalStop.coords.lng
+          ).toFixed(6)}`
+        : String(issueModalStop.location || "0.0, 0.0");
+
+      await workerService.reportStopIssue({
+        title: `Pickup Issue - Stop #${issueModalStop.row}`,
+        category: "missed_pickup",
+        description: `Stop #${issueModalStop.row} (${issueModalStop.location}): ${reason}`,
+        location: locStr,
+        priority: "high",
+      });
+
+      // Update local stop status
+      setStops((prev) =>
+        prev.map((s) =>
+          s.id === issueModalStop.id
+            ? { ...s, status: "issue", issueReason: reason }
+            : s
+        )
+      );
+      setIssueModalStop(null);
+    } catch (err) {
+      // Handle 409 Conflict gracefully (Active concern already exists for this stop)
+      if (err?.response?.status === 409) {
+        setStops((prev) =>
+          prev.map((s) =>
+            s.id === issueModalStop.id
+              ? { ...s, status: "issue", issueReason: reason }
+              : s
+          )
+        );
+        setIssueModalStop(null);
+      } else {
+        console.error("Failed to submit issue:", err?.response?.data || err);
+      }
+    } finally {
+      setSubmittingIssue(false);
+    }
+  };
+
+  const handleUpdateAssignmentStatus = async (assignmentId, nextStatus) => {
+    try {
+      await assignmentService.updateAssignmentStatus(assignmentId, nextStatus);
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === assignmentId ? { ...a, status: nextStatus } : a
+        )
+      );
+    } catch (err) {
+      console.error("Failed to update assignment status:", err);
+    }
+  };
+
+  const handleCompleteConcern = async (assignmentId, concernId) => {
+    try {
+      if (concernId) {
+        await concernService.updateConcernStatus(concernId, "resolved");
+      }
+      await assignmentService.updateAssignmentStatus(assignmentId, "completed");
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === assignmentId ? { ...a, status: "completed" } : a
+        )
+      );
+    } catch (err) {
+      console.error("Failed to complete concern work order:", err);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-emerald-50">
-      <ToastStack toasts={toasts} onDismiss={removeToast} />
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-slate-50 to-emerald-100/30 pb-12">
+      <WorkerHeader userName={userName} />
 
-      {/* Header - Matching Admin Dashboard design */}
-      <header className="sticky top-0 z-40 bg-[#0B3D2E]/95 backdrop-blur-md shadow-lg">
-        <div className="w-full px-5 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#0DBF78] flex items-center justify-center">
-              <Leaf className="w-5 h-5 text-white" strokeWidth={2.5} />
-            </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Dynamic Metric Counter Strip */}
+        <WorkerMetricStrip
+          completedStops={completedStops}
+          totalStops={stops.length}
+          assignedConcernsCount={activeAssignedConcernsCount}
+          issuesReportedCount={issuesReportedCount}
+          shiftStatus="Active"
+        />
 
-            <div className="leading-none">
-              <p className="font-bold text-[19px] tracking-[-0.02em]">
-                <span className="text-white">Urban</span>
-                <span className="text-[#0DBF78]">Pulse</span>
-              </p>
-
-              <p className="mt-1 text-[11px] font-medium text-[#A7D8CB]">
-                Smart Waste Management
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <NotificationDropdown />
-
-            <div className="w-px h-8 bg-white/15" />
-
-            <div className="relative">
-              <button
-                onClick={() => setProfileOpen((o) => !o)}
-                className="flex items-center gap-2.5 hover:bg-white/10 rounded-full pl-1 pr-2 py-1 transition-colors"
-              >
-                <Avatar name={userName} size="w-9 h-9 text-xs" />
-                <div className="text-left leading-tight hidden sm:block">
-                  <p className="text-white text-sm font-semibold">{userName}</p>
-                  <p className="text-emerald-200/70 text-[11px]">Worker</p>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-emerald-200/70 transition-transform ${
-                    profileOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {profileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden origin-top-right z-50">
-                  <button
-                    onClick={() => {
-                      setProfileOpen(false);
-                      navigate('/profile');
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                  >
-                    <UserIcon className="w-4 h-4" /> Profile
-                  </button>
-
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50"
-                  >
-                    <LogOut className="w-4 h-4" /> Log out
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {routeLoading && (
-          <div className="rounded-2xl bg-white/70 border border-emerald-100 shadow-lg p-10 flex flex-col items-center justify-center gap-3 text-emerald-800">
-            <Loader2 className="w-8 h-8 animate-spin" />
-            <p className="font-medium">Loading your assigned route…</p>
-          </div>
-        )}
-
-        {!routeLoading && routeError && (
-          <div className="rounded-2xl bg-red-50 border border-red-200 shadow-lg p-10 flex flex-col items-center justify-center gap-3 text-center">
-            <AlertTriangle className="w-8 h-8 text-red-500" />
-            <p className="font-semibold text-red-700">{routeError}</p>
-            <button
-              onClick={loadRoute}
-              className="inline-flex items-center gap-2 mt-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Retry
-            </button>
-          </div>
-        )}
-
-        {!routeLoading && !routeError && !route && (
-          <div className="rounded-2xl bg-white/70 border border-emerald-100 shadow-lg p-10 flex flex-col items-center justify-center gap-3 text-center text-emerald-800">
-            <Inbox className="w-8 h-8 text-emerald-400" />
-            <p className="font-semibold">No route is currently assigned to you.</p>
-            <p className="text-sm text-emerald-700/70">Check back once your supervisor assigns a collection route.</p>
-          </div>
-        )}
-
-        {!routeLoading && !routeError && route && (
-          <div
-            className="rounded-3xl shadow-2xl overflow-hidden border border-white/10"
-            style={{ background: `linear-gradient(135deg, ${THEME.deepForest}f2, ${THEME.darkGreen}f2)` }}
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-gray-200/80 w-fit mb-6 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setActiveTab("route")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              activeTab === "route"
+                ? "bg-[#0B3D2E] text-white shadow-md"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
-            <div className="p-6 sm:p-8 backdrop-blur-md">
-              <div className="flex flex-wrap items-start justify-between gap-6">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-3 flex-wrap">
-                      Route #{getRouteNumber(route)}
-                      {getRouteName(route) && <span className="text-emerald-300">- {getRouteName(route)}</span>}
-                      <Truck className="w-7 h-7 text-emerald-300" />
-                    </h1>
-                    <p className="text-emerald-100/70 text-sm mt-1">Today's assigned collection route</p>
-                  </div>
-                </div>
+            <Navigation className="w-3.5 h-3.5" /> Daily Collection Route
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("concerns")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              activeTab === "concerns"
+                ? "bg-[#0B3D2E] text-white shadow-md"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <ClipboardList className="w-3.5 h-3.5" /> Assigned Concerns (
+            {activeAssignedConcernsCount})
+          </button>
+        </div>
 
-                <CircularProgress completed={completedStops} total={totalStops} />
+        {/* Tab 1: Collection Route & Map */}
+        {activeTab === "route" && (
+          <>
+            {routeLoading ? (
+              <div className="rounded-3xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-xl p-12 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                <p className="text-xs font-semibold text-gray-600">
+                  Loading assigned collection routes…
+                </p>
               </div>
+            ) : routeError ? (
+              <div className="rounded-3xl bg-red-50/80 border border-red-200 shadow-xl p-10 flex flex-col items-center justify-center gap-3 text-center">
+                <p className="font-semibold text-xs text-red-700">
+                  {routeError}
+                </p>
+                <button
+                  type="button"
+                  onClick={loadRoutes}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 transition shadow-xs"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Retry
+                </button>
+              </div>
+            ) : !selectedRoute ? (
+              <div className="rounded-3xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-xl p-12 flex flex-col items-center justify-center gap-2 text-center text-gray-500">
+                <Inbox className="w-8 h-8 text-gray-400 mb-1" />
+                <p className="font-semibold text-sm text-[#0B3D2E]">
+                  No route is currently assigned to you.
+                </p>
+                <p className="text-xs text-gray-400">
+                  Please check back once your admin assigns a route.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <WorkerRouteSummary
+                  routes={routesList}
+                  selectedRoute={selectedRoute}
+                  onSelectRoute={(r) => setSelectedRoute(r)}
+                  completedStops={completedStops}
+                  totalStops={stops.length}
+                />
 
-              {/* Stops checklist */}
-              <div className="mt-8 rounded-2xl bg-white/95 shadow-inner overflow-hidden">
-                <div className="px-5 py-4 border-b border-emerald-100 flex items-center gap-2">
-                  <Navigation className="w-5 h-5 text-emerald-700" />
-                  <h2 className="font-bold text-emerald-900">Stops Checklist</h2>
-                </div>
+                <WorkerStopsTable
+                  stops={stops}
+                  loading={stopsLoading}
+                  error={stopsError}
+                  onRetry={loadStops}
+                  onMarkDone={handleMarkDone}
+                  onOpenIssueModal={(s) => setIssueModalStop(s)}
+                  actionLoadingId={actionLoadingId}
+                />
 
-                {stopsLoading && (
-                  <div className="p-10 flex flex-col items-center justify-center gap-3 text-emerald-800">
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    <p className="text-sm font-medium">Loading collection stops…</p>
-                  </div>
-                )}
-
-                {!stopsLoading && stopsError && (
-                  <div className="p-8 flex flex-col items-center justify-center gap-3 text-center">
-                    <AlertTriangle className="w-6 h-6 text-red-500" />
-                    <p className="text-sm font-semibold text-red-700">{stopsError}</p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Live Navigation Map
+                    </h3>
                     <button
-                      onClick={loadStops}
-                      className="inline-flex items-center gap-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+                      type="button"
+                      onClick={() => setMapOpen((v) => !v)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition shadow-xs"
                     >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      Retry
+                      <MapIcon className="w-3.5 h-3.5 text-emerald-600" />
+                      {mapOpen ? "Hide Route Map" : "Open Route Map"}
                     </button>
                   </div>
-                )}
-
-                {!stopsLoading && !stopsError && stops.length === 0 && (
-                  <div className="p-8 flex flex-col items-center justify-center gap-2 text-center text-emerald-800">
-                    <Inbox className="w-6 h-6 text-emerald-400" />
-                    <p className="text-sm font-medium">No collection stops are currently assigned to this route.</p>
-                  </div>
-                )}
-
-                {!stopsLoading && !stopsError && stops.length > 0 && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm min-w-[720px]">
-                      <thead>
-                        <tr className="text-left text-emerald-900/60 text-xs uppercase tracking-wide">
-                          <th className="px-5 py-3 font-semibold">Row</th>
-                          <th className="px-5 py-3 font-semibold">Location</th>
-                          <th className="px-5 py-3 font-semibold">Estimated Arrival</th>
-                          <th className="px-5 py-3 font-semibold">Status</th>
-                          <th className="px-5 py-3 font-semibold">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-emerald-50">
-                        {stops.map((stop) => (
-                          <tr key={stop.id ?? stop.row} className="hover:bg-emerald-50/50 transition-colors">
-                            <td className="px-5 py-4 font-semibold text-emerald-900">{stop.row}</td>
-                            <td className="px-5 py-4 text-gray-700">
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                                <span>{stop.location}</span>
-                              </div>
-                            </td>
-                            <td className="px-5 py-4 text-gray-600">
-                              <div className="flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-gray-400" />
-                                {stop.eta ?? '—'}
-                              </div>
-                            </td>
-                            <td className="px-5 py-4">
-                              <StatusBadge status={stop.status} issueReason={stop.issueReason} />
-                            </td>
-                            <td className="px-5 py-4">
-                              {stop.status === 'pending' ? (
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <button
-                                    onClick={() => handleMarkDone(stop)}
-                                    disabled={actionLoadingId === stop.id}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold px-3 py-1.5 transition-colors"
-                                  >
-                                    {actionLoadingId === stop.id ? (
-                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    ) : (
-                                      <CheckCircle className="w-3.5 h-3.5" />
-                                    )}
-                                    Mark Done
-                                  </button>
-                                  <button
-                                    onClick={() => handleOpenIssueModal(stop)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-3 py-1.5 transition-colors"
-                                  >
-                                    <AlertTriangle className="w-3.5 h-3.5" />
-                                    Report Issue
-                                  </button>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-gray-400">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                  {mapOpen && <WorkerRouteMap stops={stops} />}
+                </div>
               </div>
+            )}
+          </>
+        )}
 
-              {/* Map toggle */}
-              {!stopsLoading && !stopsError && stops.length > 0 && (
-                <div className="mt-6 flex justify-center">
-                  <button
-                    onClick={() => setMapOpen((v) => !v)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-6 py-3 shadow-lg transition-colors"
-                  >
-                    <MapIcon className="w-5 h-5" />
-                    {mapOpen ? 'Hide Route Map' : 'Open Route Map'}
-                  </button>
-                </div>
-              )}
-
-              {/* Map */}
-              {mapOpen && !stopsLoading && !stopsError && stops.length > 0 && (
-                <div className="mt-6">
-                  <RouteMap stops={stops} />
-                </div>
-              )}
-            </div>
-          </div>
+        {/* Tab 2: Assigned Citizen Concerns */}
+        {activeTab === "concerns" && (
+          <WorkerAssignmentsView
+            assignments={assignments}
+            loading={assignmentsLoading}
+            onUpdateStatus={handleUpdateAssignmentStatus}
+            onCompleteConcern={handleCompleteConcern}
+          />
         )}
       </main>
 
+      {/* Report Issue Modal */}
       <ReportIssueModal
         stop={issueModalStop}
-        onClose={handleCloseIssueModal}
+        onClose={() => setIssueModalStop(null)}
         onSubmit={handleSubmitIssue}
         submitting={submittingIssue}
       />
 
-      {/* Floating Chatbot */}
       <FloatingChatbot />
     </div>
   );

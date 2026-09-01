@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from geoalchemy2.elements import WKTElement
@@ -47,10 +47,10 @@ def _collection_point_response(
 def create_collection_point(
     db: Session,
     route_id: int,
-    waste_bin_id: UUID,
     latitude: float,
     longitude: float,
     sequence_order: int,
+    waste_bin_id: UUID | None = None,
 ) -> dict:
     route = db.scalar(
         select(CollectionRoute).where(
@@ -66,30 +66,33 @@ def create_collection_point(
             "Collection points can only be added to active routes"
         )
 
-    waste_bin = db.scalar(
-        select(WasteBin).where(
-            WasteBin.id == waste_bin_id,
-        )
-    )
-
-    if waste_bin is None:
-        raise ValueError("Waste bin not found")
-
-    if waste_bin.status != WasteBinStatus.ACTIVE:
-        raise ValueError("Waste bin is inactive")
-
-    existing_bin = db.scalar(
-        select(CollectionPoint).where(
-            CollectionPoint.route_id == route_id,
-            CollectionPoint.waste_bin_id == waste_bin_id,
-        )
-    )
-
-    if existing_bin is not None:
-        raise ValueError(
-            "Waste bin is already part of this collection route"
+    # Validate waste bin only if an explicit UUID is provided
+    if waste_bin_id is not None:
+        waste_bin = db.scalar(
+            select(WasteBin).where(
+                WasteBin.id == waste_bin_id,
+            )
         )
 
+        if waste_bin is None:
+            raise ValueError("Waste bin not found")
+
+        if waste_bin.status != WasteBinStatus.ACTIVE:
+            raise ValueError("Waste bin is inactive")
+
+        existing_bin = db.scalar(
+            select(CollectionPoint).where(
+                CollectionPoint.route_id == route_id,
+                CollectionPoint.waste_bin_id == waste_bin_id,
+            )
+        )
+
+        if existing_bin is not None:
+            raise ValueError(
+                "Waste bin is already part of this collection route"
+            )
+
+    # Sequence order collision prevention per route
     existing_sequence = db.scalar(
         select(CollectionPoint).where(
             CollectionPoint.route_id == route_id,
@@ -193,6 +196,7 @@ def update_collection_point(
     latitude: float | None,
     longitude: float | None,
     sequence_order: int | None,
+    waste_bin_id: UUID | None = None,
 ) -> CollectionPoint:
     if collection_point.status != "pending":
         raise ValueError(
@@ -261,6 +265,9 @@ def update_collection_point(
 
         collection_point.sequence_order = sequence_order
 
+    if waste_bin_id is not None:
+        collection_point.waste_bin_id = waste_bin_id
+
     db.commit()
     db.refresh(collection_point)
 
@@ -302,10 +309,8 @@ def mark_collection_point_collected(
         )
 
     collection_point.status = "collected"
-    collection_point.collected_at = datetime.utcnow()
+    collection_point.collected_at = datetime.now(timezone.utc)
 
-    # SessionLocal uses autoflush=False, so explicitly flush the
-    # collection point update before checking for remaining pending points.
     db.flush()
 
     pending_point_exists = db.scalar(
@@ -324,3 +329,10 @@ def mark_collection_point_collected(
     db.refresh(collection_point)
 
     return collection_point
+
+def delete_collection_point(
+    db: Session,
+    collection_point: CollectionPoint,
+) -> None:
+    db.delete(collection_point)
+    db.commit()

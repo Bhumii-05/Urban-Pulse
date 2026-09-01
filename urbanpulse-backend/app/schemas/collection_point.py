@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class CollectionPointCreate(BaseModel):
     route_id: int
-    waste_bin_id: UUID
+    waste_bin_id: UUID | None = None
     latitude: float = Field(
         ge=-90,
         le=90,
@@ -16,11 +16,13 @@ class CollectionPointCreate(BaseModel):
         le=180,
     )
     sequence_order: int = Field(
+        default=1,
         ge=1,
     )
 
 
 class CollectionPointUpdate(BaseModel):
+    waste_bin_id: UUID | None = None
     latitude: float | None = Field(
         default=None,
         ge=-90,
@@ -44,9 +46,9 @@ class CollectionPointResponse(BaseModel):
 
     id: int
     route_id: int
-    waste_bin_id: UUID
+    waste_bin_id: UUID | None = None
     latitude: float
     longitude: float
     sequence_order: int
     status: str
-    collected_at: datetime | None
+    collected_at: datetime | None = None

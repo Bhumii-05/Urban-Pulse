@@ -1,27 +1,46 @@
 import api from "./axios";
 
 export const concernService = {
-  createConcern: async ({ category, description, location, priority }) => {
+  createConcern: async ({
+    title,
+    category = "missed_pickup",
+    description,
+    location,
+    priority = "high",
+  }) => {
+    // Robust location normalization
     let formattedLocation = location;
 
     if (location && typeof location === "object") {
       const lat = location.latitude ?? location.lat;
       const lng = location.longitude ?? location.lng;
-      formattedLocation = {
-        latitude: Number(lat),
-        longitude: Number(lng),
-      };
+      if (lat != null && lng != null) {
+        formattedLocation = {
+          latitude: Number(lat),
+          longitude: Number(lng),
+        };
+      }
     } else if (typeof location === "string" && location.includes(",")) {
       const [lat, lng] = location.split(",").map((v) => Number(v.trim()));
-      formattedLocation = { latitude: lat, longitude: lng };
+      if (!isNaN(lat) && !isNaN(lng)) {
+        formattedLocation = { latitude: lat, longitude: lng };
+      }
     }
 
-    const response = await api.post("/concerns/", {
-      category,
-      description,
+    // Base payload
+    const payload = {
+      category: String(category).toLowerCase(),
+      description: description || "Reported collection issue",
       location: formattedLocation,
       priority: String(priority).toLowerCase(),
-    });
+    };
+
+    // Attach title if provided (for schemas that require it)
+    if (title && String(title).trim()) {
+      payload.title = String(title).trim();
+    }
+
+    const response = await api.post("/concerns/", payload);
     return response.data;
   },
 
@@ -46,7 +65,7 @@ export const concernService = {
 
   updateConcernStatus: async (concernId, status) => {
     const response = await api.patch(`/concerns/${concernId}/status`, {
-      status,
+      status: String(status).toLowerCase(),
     });
     return response.data;
   },
@@ -56,3 +75,5 @@ export const concernService = {
     return response.data;
   },
 };
+
+export default concernService;
