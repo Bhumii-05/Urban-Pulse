@@ -23,9 +23,6 @@ class AISource(BaseModel):
 
 
 class AIAskResponse(BaseModel):
-    """
-    Response returned by the AI assistant.
-    """
-
     answer: str
-    sources: list[AISource] = []
+    follow_up_questions: list[str] = Field(default_factory=list)
+    sources: list = Field(default_factory=list)

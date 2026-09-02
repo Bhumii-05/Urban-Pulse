@@ -20,9 +20,7 @@ def ingest_document(file_path: str) -> None:
     if not path.exists():
         raise FileNotFoundError(f"Document not found: {file_path}")
 
-    print("=" * 60)
-    print("DOCUMENT INGESTION STARTED")
-    print("=" * 60)
+    print("DOCUMENT INGESTION STARTED: ")
 
     # 1. Load document
     print(f"\n[1/5] Loading document: {path}")
@@ -67,9 +65,7 @@ def ingest_document(file_path: str) -> None:
     after_count = vector_store.count()
     print(f"Documents in ChromaDB after ingestion: {after_count}")
 
-    print("\n" + "=" * 60)
-    print("DOCUMENT INGESTION COMPLETED")
-    print("=" * 60)
+    print("DOCUMENT INGESTION COMPLETED: ")
     print(f"Source: {path.name}")
     print(f"Pages: {len(pages)}")
     print(f"Chunks: {len(chunks)}")

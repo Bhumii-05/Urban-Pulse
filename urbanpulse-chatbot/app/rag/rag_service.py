@@ -1,3 +1,4 @@
+import json
 from typing import Any, Optional
 from app.prompts.rag_prompt import (
     SYSTEM_PROMPT,
@@ -54,6 +55,7 @@ class RAGService:
         Returns:
             Dictionary containing:
                 answer
+                follow_up_questions
                 sources
         """
 
@@ -82,6 +84,7 @@ class RAGService:
                     "The available information is "
                     "insufficient to answer this question."
                 ),
+                "follow_up_questions": [],
                 "sources": [],
             }
 
@@ -99,6 +102,7 @@ class RAGService:
                     "The available information is "
                     "insufficient to answer this question."
                 ),
+                "follow_up_questions": [],
                 "sources": [],
             }
 
@@ -121,17 +125,16 @@ class RAGService:
         # 5. Generate LLM answer
         # ---------------------------------------------
 
-        answer = self.llm_service.generate(
+        raw_answer = self.llm_service.generate(
             system_prompt=SYSTEM_PROMPT,
             user_prompt=user_prompt,
         )
 
-        # ---------------------------------------------
-        # 6. Return answer + sources
-        # ---------------------------------------------
+        parsed_response = self._parse_llm_response(raw_answer)
 
         return {
-            "answer": answer,
+            "answer": parsed_response["answer"],
+            "follow_up_questions": parsed_response["follow_up_questions"],
             "sources": built_context.sources,
         }
 
@@ -143,3 +146,40 @@ class RAGService:
         Alias for answer() method to support tests calling ask().
         """
         return self.answer(question)
+
+    def _parse_llm_response(self, raw_answer: str) -> dict:
+        fallback = {
+            "answer": raw_answer.strip() if raw_answer else "",
+            "follow_up_questions": [],
+        }
+
+        if not raw_answer:
+            return fallback
+
+        try:
+            parsed = json.loads(raw_answer)
+        except json.JSONDecodeError:
+            return fallback
+
+        if not isinstance(parsed, dict):
+            return fallback
+
+        answer = parsed.get("answer", "")
+        follow_ups = parsed.get("follow_up_questions", [])
+
+        if not isinstance(answer, str):
+            answer = ""
+
+        if not isinstance(follow_ups, list):
+            follow_ups = []
+
+        clean_follow_ups = [
+            item.strip()
+            for item in follow_ups
+            if isinstance(item, str) and item.strip()
+        ]
+
+        return {
+            "answer": answer.strip(),
+            "follow_up_questions": clean_follow_ups[:3],
+        }

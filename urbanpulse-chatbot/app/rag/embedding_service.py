@@ -78,3 +78,9 @@ class EmbeddingService:
             )
 
         return embedded_chunks
+
+if __name__ == "__main__":
+    from app.providers.embedding_provider import EmbeddingProvider # Or your concrete provider class name
+    from app.rag.models import Chunk
+    
+    print("EmbeddingService module loaded successfully.")

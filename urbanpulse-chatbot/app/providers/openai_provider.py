@@ -1,4 +1,5 @@
 import base64
+
 from openai import OpenAI
 
 from app.config.settings import settings
@@ -12,7 +13,6 @@ class OpenAIProvider(
 ):
     """
     OpenAI implementation for:
-
     - Text generation
     - Image + text generation
     - Embedding generation
@@ -36,20 +36,17 @@ class OpenAIProvider(
         prompt: str,
     ) -> str:
         """
-        Generate a text response using OpenAI with JSON mode enabled.
+        Generate a natural-language text response using OpenAI.
         """
 
         if not prompt or not prompt.strip():
-            raise ValueError("Prompt cannot be empty.")
+            raise ValueError(
+                "Prompt cannot be empty."
+            )
 
         response = self.client.chat.completions.create(
             model=self.llm_model,
-            response_format={"type": "json_object"},
             messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant. Always respond in valid JSON format.",
-                },
                 {
                     "role": "user",
                     "content": prompt.strip(),
@@ -57,7 +54,17 @@ class OpenAIProvider(
             ],
         )
 
-        return response.choices[0].message.content or ""
+        answer = (
+            response.choices[0].message.content
+            or ""
+        )
+
+        if not answer.strip():
+            raise RuntimeError(
+                "OpenAI returned an empty response."
+            )
+
+        return answer.strip()
 
     def generate_with_image(
         self,
@@ -66,21 +73,28 @@ class OpenAIProvider(
         mime_type: str,
     ) -> str:
         """
-        Generate a response using text and an image with JSON mode enabled.
+        Generate a response using text and an image.
         """
 
         if not prompt or not prompt.strip():
-            raise ValueError("Prompt cannot be empty.")
+            raise ValueError(
+                "Prompt cannot be empty."
+            )
 
         if not image_data:
-            raise ValueError("Image data cannot be empty.")
+            raise ValueError(
+                "Image data cannot be empty."
+            )
 
         if not mime_type or not mime_type.strip():
-            raise ValueError("Image MIME type cannot be empty.")
+            raise ValueError(
+                "Image MIME type cannot be empty."
+            )
 
-        # Convert raw bytes to base64 string safely
         if isinstance(image_data, bytes):
-            base64_str = base64.b64encode(image_data).decode("utf-8")
+            base64_str = base64.b64encode(
+                image_data
+            ).decode("utf-8")
         else:
             base64_str = image_data.strip()
 
@@ -91,11 +105,16 @@ class OpenAIProvider(
 
         response = self.client.chat.completions.create(
             model=self.llm_model,
-            response_format={"type": "json_object"},
+            response_format={
+                "type": "json_object"
+            },
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a helpful assistant. Always respond in valid JSON format.",
+                    "content": (
+                        "You are a helpful assistant. "
+                        "Always respond in valid JSON format."
+                    ),
                 },
                 {
                     "role": "user",
@@ -111,14 +130,18 @@ class OpenAIProvider(
                             },
                         },
                     ],
-                }
+                },
             ],
         )
 
-        answer = response.choices[0].message.content
+        answer = (
+            response.choices[0].message.content
+        )
 
         if not answer:
-            raise RuntimeError("OpenAI returned an empty response.")
+            raise RuntimeError(
+                "OpenAI returned an empty response."
+            )
 
         return answer
 
@@ -130,9 +153,14 @@ class OpenAIProvider(
         Generate an embedding vector using OpenAI.
         """
 
+        if not text or not text.strip():
+            raise ValueError(
+                "Text cannot be empty."
+            )
+
         response = self.client.embeddings.create(
             model=self.embedding_model,
-            input=text,
+            input=text.strip(),
         )
 
         return response.data[0].embedding

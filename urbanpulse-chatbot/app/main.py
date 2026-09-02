@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.ai import router as ai_router
-from app.api.complaints import router as complaints_router
 from app.api.exceptions import AIServiceError
 
 app = FastAPI(
@@ -81,10 +80,6 @@ async def global_exception_handler(
 
 app.include_router(ai_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="")
-
-app.include_router(complaints_router, prefix="/api/v1")
-app.include_router(complaints_router, prefix="")
-
 
 @app.get("/")
 def root():
