@@ -1,6 +1,7 @@
 from app.providers.embedding_provider import EmbeddingProvider
 from app.rag.models import RetrievalResult
 from app.rag.vector_store import VectorStore
+from app.rag.query_expander import QueryExpander
 
 
 class Retriever:
@@ -14,11 +15,12 @@ class Retriever:
     """
 
     def __init__(
-        self,
-        embedding_provider: EmbeddingProvider,
-        vector_store: VectorStore,
-        top_k: int = 5,
-    ):
+    self,
+    embedding_provider: EmbeddingProvider,
+    vector_store: VectorStore,
+    top_k: int = 5,
+    query_expander: QueryExpander | None = None,
+):
         if top_k <= 0:
             raise ValueError(
                 "top_k must be greater than 0."
@@ -27,31 +29,20 @@ class Retriever:
         self.embedding_provider = embedding_provider
         self.vector_store = vector_store
         self.top_k = top_k
-
-    def retrieve(
-        self,
-        query: str,
-    ) -> list[RetrievalResult]:
-        """
-        Retrieve relevant chunks for a user query.
-
-        Args:
-            query: User's natural-language question.
-
-        Returns:
-            List of RetrievalResult objects.
-        """
-
+        self.query_expander = query_expander
+    def retrieve(self, query: str) -> list[RetrievalResult]:
         if not query or not query.strip():
             return []
 
         query = query.strip()
 
-        query_embedding = (
-            self.embedding_provider.embed(
-                query
-            )
+        retrieval_query = (
+            self.query_expander.expand(query)
+            if self.query_expander
+            else query
         )
+
+        query_embedding = self.embedding_provider.embed(retrieval_query)
 
         results = self.vector_store.search(
             query_embedding=query_embedding,

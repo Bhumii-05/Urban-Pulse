@@ -1,10 +1,13 @@
+from typing import Annotated
+from fastapi import Depends, FastAPI
+
 from app.providers.embedding_provider import EmbeddingProvider
 from app.providers.openai_provider import OpenAIProvider
 
 from app.rag.context_builder import ContextBuilder
 from app.rag.rag_service import RAGService
 from app.rag.retriever import Retriever
-from app.rag.vector_store import ChromaVectorStore
+from app.rag.vector_store import ChromaVectorStore, VectorStore
 
 from app.repositories.complaint_repository import (
     ComplaintRepository,
@@ -12,12 +15,9 @@ from app.repositories.complaint_repository import (
 from app.repositories.sqlite_complaint_repository import (
     SQLiteComplaintRepository,
 )
+from app.rag.query_expander import QueryExpander
 
 from app.services.classifier_service import ClassifierService
-from app.services.complaint_service import ComplaintService
-from app.services.complaint_status_service import (
-    ComplaintStatusService,
-)
 from app.services.image_storage import ImageStorage
 from app.services.llm_service import LLMService
 from app.services.local_image_storage import (
@@ -69,40 +69,6 @@ def get_image_storage() -> ImageStorage:
 
 
 # ============================================================
-# Complaint Service
-# ============================================================
-
-def get_complaint_service() -> ComplaintService:
-    """
-    Creates a fully configured ComplaintService.
-    """
-    provider = OpenAIProvider()
-    repository = get_complaint_repository()
-    image_storage = get_image_storage()
-
-    return ComplaintService(
-        provider=provider,
-        repository=repository,
-        image_storage=image_storage,
-    )
-
-
-# ============================================================
-# Complaint Status Service
-# ============================================================
-
-def get_complaint_status_service() -> ComplaintStatusService:
-    """
-    Creates a fully configured ComplaintStatusService.
-    """
-    repository = get_complaint_repository()
-
-    return ComplaintStatusService(
-        repository=repository,
-    )
-
-
-# ============================================================
 # RAG Service
 # ============================================================
 
@@ -122,18 +88,20 @@ def get_vector_store() -> ChromaVectorStore:
         collection_name="knowledge_base",
     )
 
+def get_query_expander() -> QueryExpander:
+    return QueryExpander()
 
-def get_retriever() -> Retriever:
-    """
-    Creates the RAG retriever.
-    """
-    embedding_provider = get_embedding_provider()
-    vector_store = get_vector_store()
 
+def get_retriever(
+    embedding_provider: EmbeddingProvider = Depends(get_embedding_provider),
+    vector_store: VectorStore = Depends(get_vector_store),
+    query_expander: QueryExpander = Depends(get_query_expander),
+) -> Retriever:
     return Retriever(
         embedding_provider=embedding_provider,
         vector_store=vector_store,
         top_k=5,
+        query_expander=query_expander,
     )
 
 
@@ -161,7 +129,17 @@ def get_rag_service() -> RAGService:
     """
     Creates a fully configured RAGService.
     """
-    retriever = get_retriever()
+    embedding_provider = get_embedding_provider()
+    vector_store = get_vector_store()
+    query_expander = get_query_expander()
+
+    retriever = Retriever(
+        embedding_provider=embedding_provider,
+        vector_store=vector_store,
+        top_k=5,
+        query_expander=query_expander,
+    )
+
     context_builder = get_context_builder()
     llm_service = get_llm_service()
 
