@@ -2,13 +2,15 @@ import React, { useState, useRef, useEffect } from "react";
 import { MessageCircle, Send, X, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { askChatbot } from "../api/chatbot.service";
+import { frequentlyAskedQuestions } from "../api/frequentlyAskedQuestions";
 
 export default function FloatingChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Hi! How can I help you with municipal services today?",
+      content: "Hi! How can I help you with municipal services today? Choose from the options below or type your own question:",
+      followUpQuestions: frequentlyAskedQuestions,
     },
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -20,9 +22,10 @@ export default function FloatingChatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendChat = async () => {
-    if (!chatInput.trim() || loading) return;
-    const userMsg = chatInput.trim();
+  const handleSendMessage = async (textToSend) => {
+    const userMsg = textToSend.trim();
+    if (!userMsg || loading) return;
+
     setChatInput("");
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setLoading(true);
@@ -31,7 +34,11 @@ export default function FloatingChatbot() {
       const data = await askChatbot(userMsg);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data?.answer || "No response received." },
+        {
+          role: "assistant",
+          content: data?.answer || "No response received.",
+          followUpQuestions: data?.follow_up_questions || [],
+        },
       ]);
     } catch (err) {
       setMessages((prev) => [
@@ -39,6 +46,7 @@ export default function FloatingChatbot() {
         {
           role: "assistant",
           content: "Sorry, I had trouble processing that request.",
+          followUpQuestions: [],
         },
       ]);
     } finally {
@@ -71,11 +79,38 @@ export default function FloatingChatbot() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 && !loading && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800">
+                    Frequently asked questions
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Select a question to get an answer.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  {frequentlyAskedQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleSendMessage(question)}
+                      disabled={loading}
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left text-xs text-gray-700 transition-colors hover:border-[#005B4F] hover:bg-[#005B4F] hover:text-white disabled:opacity-50"
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {messages.map((m, idx) => (
               <div
                 key={idx}
-                className={`flex ${
-                  m.role === "user" ? "justify-end" : "justify-start"
+                className={`flex flex-col ${
+                  m.role === "user" ? "items-end" : "items-start"
                 }`}
               >
                 <div
@@ -87,6 +122,21 @@ export default function FloatingChatbot() {
                 >
                   <ReactMarkdown>{m.content}</ReactMarkdown>
                 </div>
+
+                {m.role === "assistant" && m.followUpQuestions?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5 max-w-[85%]">
+                    {m.followUpQuestions.map((question, qIdx) => (
+                      <button
+                        key={qIdx}
+                        type="button"
+                        onClick={() => handleSendMessage(question)}
+                        className="rounded-full border border-[#005B4F] bg-white px-3 py-1 text-xs text-[#005B4F] transition-colors hover:bg-[#005B4F] hover:text-white text-left"
+                      >
+                        {question}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             {loading && (
@@ -105,12 +155,12 @@ export default function FloatingChatbot() {
               type="text"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
+              onKeyDown={(e) => e.key === "Enter" && handleSendMessage(chatInput)}
               placeholder="Ask a question..."
               className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:border-[#005B4F]"
             />
             <button
-              onClick={handleSendChat}
+              onClick={() => handleSendMessage(chatInput)}
               disabled={loading || !chatInput.trim()}
               className="rounded-xl bg-[#005B4F] p-2 text-white disabled:opacity-50"
             >
