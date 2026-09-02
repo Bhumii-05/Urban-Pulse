@@ -150,3 +150,13 @@ def update_collection_route_status(
     db.refresh(route)
 
     return route
+
+def delete_collection_route(
+    db: Session,
+    route: CollectionRoute,
+) -> None:
+    if route.status == RouteStatus.COMPLETED:
+        raise ValueError("Completed collection routes cannot be deleted")
+
+    db.delete(route)
+    db.commit()

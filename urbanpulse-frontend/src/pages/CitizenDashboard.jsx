@@ -1,383 +1,653 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Leaf,
-  Bell,
   ChevronDown,
   X,
-  Eye,
-  Trash2,
-  AlertTriangle,
-  LogOut,
-  Settings,
-  CheckCircle2,
-  User as UserIcon,
-  Layers3,
-  Truck,
-  CircleCheck,
-  TriangleAlert,
-  Hammer,
-  ClipboardList,
-  MapPin,
   Loader2,
+  AlertCircle,
+  RefreshCw,
+  Trash2,
+  MapPin,
+  LayoutDashboard,
+  Layers,
+  Clock,
+  CheckCircle2,
+  ClipboardList,
+  MessageSquare,
+  Send,
+  Truck,
+  AlertTriangle,
+  Wrench,
+  ChevronRight,
+  LogOut,
+  User,
+  Check,
 } from "lucide-react";
-import FloatingChatbot from "../components/FloatingChatbot";
-import { authService } from "../api/auth.service";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  useMap,
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
 import { citizenService } from "../api/citizen.service";
+import { authService } from "../api/auth.service";
+import FloatingChatbot from "../components/FloatingChatbot";
+import ConcernImageGallery from "../components/report-concern/ConcernImageGallery";
+import NotificationDropdown from "../components/NotificationDropdown";
+import { useNavigate } from "react-router-dom";
 
-const BACKGROUND_IMAGE_URL =
-  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5Ojf/2wBDAQoKCg0MDRoPDxo3JR8lNzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzf/wAARCAONBkADASIAAhEBAxEB/8QAGwABAQADAQEBAAAAAAAAAAAAAAECAwQFBgf/xABCEAEAAgIBAgQEAwYDCAICAAcAAQIDEQQSIQUxQVETImFxMoGRBhQjQlJyM6GxFSRDYoKSwdE0RFNUc+EWJWOi8P/EABoBAQEBAQEBAQAAAAAAAAAAAAABAgMEBQb/xAAvEQEBAAIBAwQCAgEEAQUBAAAAAQIRAxIhMQQTQVEUMiJhBSNScYFCkpMH/xAAAEAEBAQEBAAAAAAAAAAAAAAABAhEAMf/aAAwDAQACEAMBB4A3YAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/Z";
+const DEFAULT_CENTER = { lat: 22.5726, lng: 88.3639 };
 
-const CATEGORY_ICONS = {
-  "Overflowing Bin": Trash2,
-  "Missed Pickup": Truck,
-  "Illegal Dumping": TriangleAlert,
-  "Damaged Bin": Hammer,
+const SUGGESTION_TYPES = [
+  { value: "waste_pickup", label: "Waste Pickup" },
+  { value: "add_bin", label: "Add Bin" },
+  { value: "general", label: "General" },
+  { value: "other", label: "Other" },
+];
+
+const CONCERN_STATUS_STYLES = {
+  open: {
+    label: "Open",
+    badge: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200",
+    dot: "bg-blue-500",
+  },
+  pending: {
+    label: "Pending",
+    badge: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
+    dot: "bg-rose-500",
+  },
+  assigned: {
+    label: "Assigned",
+    badge: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+    dot: "bg-amber-500",
+  },
+  resolved: {
+    label: "Resolved",
+    badge: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
+    dot: "bg-emerald-500",
+  },
+  closed: {
+    label: "Closed",
+    badge: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
+    dot: "bg-slate-400",
+  },
 };
 
-function CategoryIcon({ category }) {
-  const Icon = CATEGORY_ICONS[category] || ClipboardList;
+const PRIORITY_STYLES = {
+  low: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
+  medium: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
+  high: "bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200",
+  critical: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200",
+  urgent: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200",
+};
+
+const SUGGESTION_STATUS_STYLES = {
+  pending: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+  approved: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
+  rejected: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200",
+};
+
+const DELETABLE_STATUSES = ["open", "pending"];
+
+function toTitleCase(value) {
+  if (!value) return "Unknown";
+  return String(value)
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function formatLocation(loc) {
+  if (!loc) return "—";
+  if (typeof loc === "string") return loc;
+  if (typeof loc === "object") {
+    const lat = loc.latitude ?? loc.lat;
+    const lng = loc.longitude ?? loc.lng;
+    if (lat != null && lng != null) {
+      return `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`;
+    }
+    return loc.address || loc.name || "Coordinates unavailable";
+  }
+  return String(loc);
+}
+
+function getConcernStatusStyle(status) {
+  const key = String(status || "").toLowerCase();
+  if (CONCERN_STATUS_STYLES[key]) return CONCERN_STATUS_STYLES[key];
+  return {
+    label: toTitleCase(status),
+    badge: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
+    dot: "bg-slate-400",
+  };
+}
+
+function getPriorityStyle(priority) {
+  const key = String(priority || "").toLowerCase();
   return (
-    <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-      <Icon className="w-4 h-4 text-emerald-700" />
-    </div>
+    PRIORITY_STYLES[key] ||
+    "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
   );
 }
 
-const STATUS_BADGE_STYLES = {
-  Assigned: "bg-amber-100 text-amber-700 ring-1 ring-inset ring-amber-200",
-  Resolved: "bg-emerald-100 text-emerald-700 ring-1 ring-inset ring-emerald-200",
-  Pending: "bg-red-100 text-red-700 ring-1 ring-inset ring-red-200",
-};
+function getSuggestionStatusStyle(status) {
+  const key = String(status || "").toLowerCase();
+  return (
+    SUGGESTION_STATUS_STYLES[key] ||
+    "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+  );
+}
 
-const STATUS_DOT = {
-  Assigned: "bg-amber-500",
-  Resolved: "bg-emerald-500",
-  Pending: "bg-red-500",
-};
+function formatDate(isoString) {
+  if (!isoString) return "—";
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
-function StatusBadge({ status }) {
+function getCategoryIcon(category) {
+  const key = String(category || "").toLowerCase();
+  if (key.includes("overflow")) return Trash2;
+  if (key.includes("pickup") || key.includes("missed")) return Truck;
+  if (key.includes("dump") || key.includes("illegal")) return AlertTriangle;
+  if (key.includes("damage") || key.includes("broken")) return Wrench;
+  return ClipboardList;
+}
+
+function extractErrorMessage(error, fallback) {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail) && detail.length > 0) {
+    return detail
+      .map((item) => item.msg || item.message)
+      .filter(Boolean)
+      .join(" ");
+  }
+  return fallback;
+}
+
+function getInitials(name) {
+  if (!name) return "SK";
+  return name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+const pinIcon = L.divIcon({
+  className: "urbanpulse-pin",
+  html: `
+    <svg width="34" height="42" viewBox="0 0 34 42" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17 0C7.6 0 0 7.6 0 17c0 12.4 17 25 17 25s17-12.6 17-25C34 7.6 26.4 0 17 0z" fill="#16A34A"/>
+      <circle cx="17" cy="17" r="7" fill="white"/>
+    </svg>
+  `,
+  iconSize: [34, 42],
+  iconAnchor: [17, 42],
+  popupAnchor: [0, -38],
+});
+
+function MapReadyFixer() {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => map.invalidateSize(), 250);
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+}
+
+function LocationPicker({ position, onSelect }) {
+  useMapEvents({
+    click(e) {
+      onSelect(e.latlng);
+    },
+  });
+  return (
+    <Marker
+      position={position}
+      icon={pinIcon}
+      draggable
+      eventHandlers={{
+        dragend: (e) => onSelect(e.target.getLatLng()),
+      }}
+    />
+  );
+}
+
+function StatCard({ icon: Icon, title, value, subtitle, loading, index }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.06, duration: 0.35, ease: "easeOut" }}
+      className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm"
+    >
+      <div className="flex items-start justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-500">{title}</p>
+          {loading ? (
+            <div className="mt-3 h-9 w-16 animate-pulse rounded-lg bg-slate-100" />
+          ) : (
+            <p className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
+              {value}
+            </p>
+          )}
+          <p className="mt-1 text-xs text-slate-400">{subtitle}</p>
+        </div>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+          <Icon className="h-5 w-5" strokeWidth={2} />
+        </div>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600" />
+    </motion.div>
+  );
+}
+
+function StatusBadge({ styleClass, label, dot }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-        STATUS_BADGE_STYLES[status] || "bg-gray-100 text-gray-600 ring-1 ring-inset ring-gray-200"
-      }`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${styleClass}`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status] || "bg-gray-400"}`} />
-      {status}
+      {dot && <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />}
+      {label}
     </span>
   );
 }
 
-function formatDate(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString("en-US", { day: "2-digit", month: "short" });
-}
+function Toast({ toast, onClose }) {
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [toast, onClose]);
 
-function formatDateLong(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
-}
-
-function Toast({ message }) {
-  if (!message) return null;
   return (
-    <div className="fixed bottom-6 right-6 z-[100] animate-[fadeInUp_0.25s_ease-out]">
-      <div className="flex items-center gap-2 bg-[#0B3D2E] text-white text-sm font-medium px-4 py-3 rounded-xl shadow-2xl ring-1 ring-white/10">
-        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-        {message}
-      </div>
-    </div>
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: -16, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -12, scale: 0.96 }}
+          className={`fixed right-4 top-4 z-[1000] flex max-w-sm items-start gap-3 rounded-xl border px-4 py-3 shadow-lg ${
+            toast.type === "error"
+              ? "border-red-200 bg-red-50 text-red-800"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {toast.type === "error" ? (
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          ) : (
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+          )}
+          <p className="text-sm font-medium">{toast.message}</p>
+          <button
+            onClick={onClose}
+            className="ml-auto shrink-0 text-current/60 hover:opacity-70"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
-function Field({ label, children }) {
+function ConfirmDeleteDialog({ concern, onCancel, onConfirm, deleting }) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1.5">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function Modal({ open, onClose, children, narrow }) {
-  return (
-    <div
-      onClick={onClose}
-      className={`fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-200 p-4 ${
-        open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-      }`}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`relative bg-white rounded-2xl shadow-2xl w-full ${
-          narrow ? "max-w-sm" : "max-w-md"
-        } p-6 transition-transform duration-200 max-h-[90vh] overflow-y-auto ${
-          open ? "scale-100" : "scale-95"
-        }`}
-      >
-        {children}
-      </div>
-    </div>
+    <AnimatePresence>
+      {concern && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[1001] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+          onClick={onCancel}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-50 text-red-600">
+              <Trash2 className="h-5 w-5" />
+            </div>
+            <h3 className="mt-4 text-lg font-semibold text-slate-900">
+              Delete this concern?
+            </h3>
+            <p className="mt-1.5 text-sm text-slate-500">
+              You're about to delete{" "}
+              <span className="font-medium text-slate-700">
+                "{concern.category || concern.title || "Concern"}"
+              </span>
+              {concern.location && (
+                <>
+                  {" "}
+                  at{" "}
+                  <span className="font-medium text-slate-700">
+                    {formatLocation(concern.location)}
+                  </span>
+                </>
+              )}
+              . This can't be undone.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={onCancel}
+                disabled={deleting}
+                className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onConfirm}
+                disabled={deleting}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Delete
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
 export default function CitizenDashboard() {
-  const [citizen, setCitizen] = useState({ name: "Citizen", role: "Citizen" });
-  const [concerns, setConcerns] = useState([]);
-  const [stats, setStats] = useState({
-    totalReports: 0,
-    assignedReports: 0,
-    resolvedReports: 0,
-  });
-
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
-
-  const [viewConcern, setViewConcern] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [showSuggest, setShowSuggest] = useState(false);
-  const [suggestForm, setSuggestForm] = useState({ location: "", reason: "", description: "" });
-
-  const [notifOpen, setNotifOpen] = useState(false);
+  const navigate = useNavigate();
+  const [userProfile, setUserProfile] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [toast, setToast] = useState("");
 
-  const toastTimer = useRef(null);
+  // Dashboard stats
+  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState(null);
 
-  function fireToast(message) {
-    setToast(message);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(""), 2400);
-  }
+  // Concerns
+  const [concerns, setConcerns] = useState([]);
+  const [concernsLoading, setConcernsLoading] = useState(true);
+  const [concernsError, setConcernsError] = useState(null);
+  const [expandedConcernId, setExpandedConcernId] = useState(null);
+  const [concernToDelete, setConcernToDelete] = useState(null);
+  const [deletingConcern, setDeletingConcern] = useState(false);
 
-  // Load User, Concerns, and Dashboard Analytics
-  const loadDashboardData = async () => {
-    setLoading(true);
-    try {
-      // 1. Fetch authenticated profile[cite: 1, 7]
-      const userRes = await authService.getCurrentUser();
-      if (userRes) {
-        setCitizen({
-          name: userRes.full_name || userRes.name || "Citizen",
-          role: "Citizen",
-        });
-      }
+  // Suggestions
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
+  const [suggestionsError, setSuggestionsError] = useState(null);
 
-      // 2. Fetch citizen's submitted concerns[cite: 1]
-      const concernsRes = await citizenService.getOwnConcerns();
-      const list = Array.isArray(concernsRes) ? concernsRes : concernsRes.concerns || [];
-      const normalizedConcerns = list.map((c) => ({
-        id: c.id || c._id,
-        category: c.category || c.title || "Waste Issue",
-        status: c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1).toLowerCase() : "Pending",
-        reportedDate: c.created_at || c.reportedDate || new Date().toISOString(),
-        description: c.description || "",
-        location: c.location || c.address || "N/A",
-        assignedTo: c.assigned_to || c.assignedTo || null,
-        resolvedAt: c.resolved_at || c.resolvedAt || null,
-        resolutionNote: c.resolution_note || c.resolutionNote || "",
-      }));
-      setConcerns(normalizedConcerns);
+  // Suggestion drawer / form
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(DEFAULT_CENTER);
+  const [suggestionForm, setSuggestionForm] = useState({
+    title: "",
+    description: "",
+    suggestion_type: "waste_pickup",
+  });
+  const [formErrors, setFormErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
-      // 3. Try fetching dashboard summary stats[cite: 1]
-      try {
-        const dashboardData = await citizenService.getCitizenDashboard();
-        if (dashboardData && dashboardData.stats) {
-          setStats(dashboardData.stats);
-        } else {
-          computeStatsFromList(normalizedConcerns);
-        }
-      } catch {
-        computeStatsFromList(normalizedConcerns);
-      }
-    } catch (err) {
-      fireToast(err.response?.data?.detail || "Failed to load dashboard data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [toast, setToast] = useState(null);
+  const toastIdRef = useRef(0);
 
-  const computeStatsFromList = (list) => {
-    const totalReports = list.length;
-    const assignedReports = list.filter((c) => c.status === "Assigned" || c.status === "In progress").length;
-    const resolvedReports = list.filter((c) => c.status === "Resolved").length;
-    setStats({ totalReports, assignedReports, resolvedReports });
-  };
-
-  useEffect(() => {
-    loadDashboardData();
+  const showToast = useCallback((type, message) => {
+    toastIdRef.current += 1;
+    setToast({ id: toastIdRef.current, type, message });
   }, []);
 
-  /* ---------------------------- Actions ---------------------------- */
-  function openView(concern) {
-    setViewConcern(concern);
-  }
-  function closeView() {
-    setViewConcern(null);
-  }
-
-  function openDelete(concern) {
-    setDeleteTarget(concern);
-  }
-  function closeDelete() {
-    setDeleteTarget(null);
-  }
-
-  async function confirmDelete() {
-    if (!deleteTarget) return;
-    setActionLoading(true);
+  const fetchProfile = useCallback(async () => {
     try {
-      await citizenService.deleteConcern(deleteTarget.id);
-      fireToast("Concern deleted successfully");
-      if (viewConcern && viewConcern.id === deleteTarget.id) setViewConcern(null);
-      closeDelete();
-      loadDashboardData();
+      const data = await authService.getCurrentUser();
+      if (data) setUserProfile(data);
     } catch (err) {
-      fireToast(err.response?.data?.detail || "Failed to delete concern");
-    } finally {
-      setActionLoading(false);
+      console.error("Failed to load citizen profile:", err);
     }
-  }
+  }, []);
 
-  function openSuggest() {
-    setSuggestForm({ location: "", reason: "", description: "" });
-    setShowSuggest(true);
-  }
-  function closeSuggest() {
-    setShowSuggest(false);
-  }
-
-  async function submitSuggestion() {
-    if (!suggestForm.location.trim()) {
-      fireToast("Please add a location for your suggestion");
-      return;
-    }
-    setActionLoading(true);
+  const fetchDashboard = useCallback(async () => {
+    setDashboardLoading(true);
+    setDashboardError(null);
     try {
-      await citizenService.submitSuggestion({
-        location: suggestForm.location.trim(),
-        reason: suggestForm.reason.trim(),
-        description: suggestForm.description.trim(),
+      const data = await citizenService.getDashboardStats();
+      setDashboardData(data);
+    } catch (err) {
+      setDashboardError(
+        extractErrorMessage(err, "Unable to load dashboard data."),
+      );
+    } finally {
+      setDashboardLoading(false);
+    }
+  }, []);
+
+  const fetchConcerns = useCallback(async () => {
+    setConcernsLoading(true);
+    setConcernsError(null);
+    try {
+      const data = await citizenService.getConcerns();
+      setConcerns(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setConcernsError(
+        extractErrorMessage(err, "Unable to load your concerns."),
+      );
+    } finally {
+      setConcernsLoading(false);
+    }
+  }, []);
+
+  const fetchSuggestions = useCallback(async () => {
+    setSuggestionsLoading(true);
+    setSuggestionsError(null);
+    try {
+      const data = await citizenService.getSuggestions();
+      setSuggestions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setSuggestionsError(
+        extractErrorMessage(err, "Unable to load your suggestions."),
+      );
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+    fetchDashboard();
+    fetchConcerns();
+    fetchSuggestions();
+  }, [fetchProfile, fetchDashboard, fetchConcerns, fetchSuggestions]);
+
+  const handleConfirmDelete = async () => {
+    if (!concernToDelete) return;
+    const targetId = concernToDelete.id || concernToDelete._id;
+    setDeletingConcern(true);
+    try {
+      await citizenService.deleteConcern(targetId);
+      setConcerns((prev) => prev.filter((c) => (c.id || c._id) !== targetId));
+      setDashboardData((prev) =>
+        prev
+          ? {
+              ...prev,
+              total_concerns: Math.max(0, (prev.total_concerns ?? 1) - 1),
+              pending_concerns: DELETABLE_STATUSES.includes(
+                String(concernToDelete.status).toLowerCase(),
+              )
+                ? Math.max(0, (prev.pending_concerns ?? 1) - 1)
+                : prev.pending_concerns,
+            }
+          : prev,
+      );
+      showToast("success", "Concern deleted successfully.");
+      setConcernToDelete(null);
+    } catch (err) {
+      showToast(
+        "error",
+        extractErrorMessage(
+          err,
+          "Could not delete this concern. Please try again.",
+        ),
+      );
+    } finally {
+      setDeletingConcern(false);
+    }
+  };
+
+  const openDrawer = () => {
+    setFormErrors({});
+    setDrawerOpen(true);
+  };
+
+  const closeDrawer = () => {
+    if (submitting) return;
+    setDrawerOpen(false);
+  };
+
+  const handleSubmitSuggestion = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    setSubmitting(true);
+    setFormErrors({});
+
+    const payload = {
+      title: suggestionForm.title.trim(),
+      description: suggestionForm.description.trim(),
+      suggestion_type: suggestionForm.suggestion_type,
+      latitude:
+        selectedLocation?.lat != null ? Number(selectedLocation.lat) : null,
+      longitude:
+        selectedLocation?.lng != null ? Number(selectedLocation.lng) : null,
+    };
+
+    try {
+      await citizenService.createSuggestion(payload);
+      showToast("success", "Suggestion submitted successfully!");
+      setSuggestionForm({
+        title: "",
+        description: "",
+        suggestion_type: "waste_pickup",
       });
-      fireToast("Your suggestion was submitted successfully");
-      closeSuggest();
+      setDrawerOpen(false);
+      fetchSuggestions();
+      fetchDashboard();
     } catch (err) {
-      fireToast(err.response?.data?.detail || "Failed to submit suggestion");
+      if (err?.response?.status === 422) {
+        const detail = err.response.data?.detail;
+        if (Array.isArray(detail)) {
+          const fieldErrors = {};
+          detail.forEach((item) => {
+            const field = item.loc?.[item.loc.length - 1];
+            if (field) fieldErrors[field] = item.msg;
+          });
+          setFormErrors(fieldErrors);
+        }
+        showToast("error", "Validation error. Please check your inputs.");
+      } else {
+        showToast(
+          "error",
+          extractErrorMessage(
+            err,
+            "Could not submit suggestion. Please try again.",
+          ),
+        );
+      }
     } finally {
-      setActionLoading(false);
+      setSubmitting(false);
     }
-  }
+  };
+
+  const userName =
+    userProfile?.full_name || userProfile?.name || "Sneha Kesharwani";
 
   return (
-    <div className="min-h-screen w-full relative font-sans text-[#123B2E]">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-        .font-sans { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-        .animate-scaleIn { animation: scaleIn 0.18s ease-out; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-      `}</style>
-
-      {/* Background */}
-      <div
-        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat bg-[#eaf4ee]"
-        style={{ backgroundImage: `url(${BACKGROUND_IMAGE_URL})` }}
-      />
-      <div className="fixed inset-0 -z-10 bg-gradient-to-b from-white/10 via-white/30 to-white/60" />
-
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#0B3D2E]/95 backdrop-blur-md shadow-lg">
-        <div className="w-full px-5 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-[#0DBF78] flex items-center justify-center">
-              <Leaf className="w-5 h-5 text-white" strokeWidth={2.5} />
+    <div className="min-h-screen bg-[#F4F8F6]">
+      {/* Navbar */}
+      <header className="sticky top-3 z-40 mx-3 rounded-2xl bg-gradient-to-r from-[#005B4F] to-[#00473e] shadow-lg">
+        <div className="flex w-full items-center justify-between gap-4 px-5 py-3 sm:px-6 lg:px-7">
+          {/* Logo */}
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm">
+              <Leaf className="h-6 w-6 text-white" strokeWidth={2.25} />
             </div>
-            <div className="leading-none">
-              <p className="font-bold text-[19px] tracking-[-0.02em]">
-                <span className="text-white">Urban</span>
-                <span className="text-[#0DBF78]">Pulse</span>
+
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-lg font-bold text-white">
+                Urban<span className="text-emerald-400">Pulse</span>
               </p>
-              <p className="mt-1 text-[11px] font-medium text-[#A7D8CB]">Smart Waste Management</p>
+
+              <p className="truncate text-[11px] font-medium text-emerald-200/70">
+                Smart Waste Management
+              </p>
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-emerald-100/90">
-            <button className="hover:text-white transition-colors">About Us</button>
-            <button className="hover:text-white transition-colors">Features</button>
-            <button className="hover:text-white transition-colors">Contact Us</button>
-            <button className="hover:text-white transition-colors">Raise A Concern</button>
-          </nav>
+          {/* Right side */}
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+            {/* Extracted Notification Dropdown Component */}
+            <NotificationDropdown />
 
-          <div className="flex items-center gap-4 shrink-0">
+            {/* Divider */}
+            <span className="hidden h-8 w-px bg-white/15 sm:block" />
+
+            {/* Profile */}
             <div className="relative">
               <button
-                onClick={() => {
-                  setNotifOpen((o) => !o);
-                  setProfileOpen(false);
-                }}
-                className="relative w-9 h-9 rounded-full flex items-center justify-center text-emerald-100 hover:bg-white/10 transition-colors"
-                aria-label="Notifications"
+                type="button"
+                onClick={() => setProfileOpen((o) => !o)}
+                className="flex items-center gap-3 rounded-full py-1 pl-1.5 pr-2.5 transition hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
               >
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#0B3D2E]" />
-              </button>
-              {notifOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden animate-scaleIn origin-top-right">
-                  <div className="px-4 py-3 border-b border-gray-100 font-semibold text-sm text-gray-700">
-                    Notifications
-                  </div>
-                  <div className="px-4 py-3 text-xs text-gray-400">You're all caught up 🍃</div>
-                </div>
-              )}
-            </div>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-[#123524] shadow-sm ring-2 ring-white/20">
+                  {getInitials(userName)}
+                </span>
 
-            <div className="w-px h-8 bg-white/15" />
+                <span className="hidden text-left leading-tight sm:block">
+                  <span className="block text-sm font-bold text-white">
+                    {userName}
+                  </span>
 
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setProfileOpen((o) => !o);
-                  setNotifOpen(false);
-                }}
-                className="flex items-center gap-2.5 hover:bg-white/10 rounded-full pl-1 pr-2 py-1 transition-colors"
-              >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white text-xs font-semibold ring-2 ring-white/20">
-                  {citizen.name[0]?.toUpperCase()}
-                </div>
-                <div className="text-left leading-tight hidden sm:block">
-                  <p className="text-white text-sm font-semibold">{citizen.name}</p>
-                  <p className="text-emerald-200/70 text-[11px]">{citizen.role}</p>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-emerald-200/70 transition-transform ${
-                    profileOpen ? "rotate-180" : ""
-                  }`}
-                />
+                  <span className="block text-[11px] text-emerald-200/70">
+                    Citizen
+                  </span>
+                </span>
+
+                <ChevronDown className="hidden h-4 w-4 text-emerald-100/70 sm:block" />
               </button>
+
               {profileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden animate-scaleIn origin-top-right">
+                <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5 z-50 divide-y divide-slate-100">
                   <button
-                    onClick={() => setProfileOpen(false)}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
+                    onClick={() => {
+                      setProfileOpen(false);
+                      navigate("/profile");
+                    }}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
                   >
-                    <UserIcon className="w-4 h-4" /> Profile
-                  </button>
-                  <button
-                    onClick={() => setProfileOpen(false)}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors"
-                  >
-                    <Settings className="w-4 h-4" /> Settings
+                    <User className="h-4 w-4 text-slate-500" />
+                    Profile
                   </button>
                   <button
                     onClick={() => authService.logout()}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50"
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-600 transition-colors hover:bg-red-50"
                   >
-                    <LogOut className="w-4 h-4" /> Log out
+                    <LogOut className="h-4 w-4" />
+                    Log out
                   </button>
                 </div>
               )}
@@ -386,307 +656,656 @@ export default function CitizenDashboard() {
         </div>
       </header>
 
-      {/* Dashboard Body */}
-      <main className="max-w-6xl mx-auto px-6 pt-8 pb-12">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#0B3D2E]">Citizen Dashboard</h1>
+      {/* Main Content */}
+      <main className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:py-10">
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            Citizen Dashboard
+          </h1>
 
-          <div className="flex items-center gap-1.5 bg-white rounded-xl p-1 border border-gray-200 w-fit shadow-sm">
-            <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#0B3D2E] text-white shadow-sm">
-              <ClipboardList className="w-3.5 h-3.5" /> Dashboard View
-            </button>
+          <div className="inline-flex w-fit items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+            <span className="flex items-center gap-2 rounded-lg bg-[#005B4F] px-3.5 py-2 text-sm font-medium text-white">
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard View
+            </span>
             <button
-              onClick={openSuggest}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors"
+              type="button"
+              onClick={openDrawer}
+              className="flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
             >
-              <MapPin className="w-3.5 h-3.5" /> Suggest Point
+              <MapPin className="h-4 w-4" />
+              Suggest Point
             </button>
           </div>
         </div>
 
-        {/* Dynamic Analytics Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="group bg-white/90 backdrop-blur-xl rounded-2xl border border-emerald-100 shadow-lg shadow-emerald-900/10 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-            <div className="flex items-start justify-between">
+        {/* Stats */}
+        {dashboardError ? (
+          <div className="mb-8 flex flex-col items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
               <div>
-                <p className="text-sm font-medium text-gray-500">Total Reported Concerns</p>
-                <p className="text-3xl font-bold text-[#0B3D2E] mt-2">{stats.totalReports}</p>
-                <p className="text-xs text-gray-400 mt-1">My total reports</p>
-              </div>
-              <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-600 transition-colors shrink-0">
-                <Layers3 className="w-5 h-5 text-emerald-700 group-hover:text-white" />
+                <p className="text-sm font-semibold text-red-800">
+                  Unable to load dashboard data.
+                </p>
+                <p className="text-sm text-red-600">Please try again.</p>
               </div>
             </div>
+            <button
+              onClick={fetchDashboard}
+              className="flex items-center gap-2 rounded-lg border border-red-300 bg-white px-3.5 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </button>
           </div>
-
-          <div className="group bg-white/90 backdrop-blur-xl rounded-2xl border border-amber-100 shadow-lg shadow-amber-900/10 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">In Progress (Assigned)</p>
-                <p className="text-3xl font-bold text-[#0B3D2E] mt-2">{stats.assignedReports}</p>
-                <p className="text-xs text-gray-400 mt-1">Being addressed</p>
-              </div>
-              <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center group-hover:bg-amber-500 transition-colors shrink-0">
-                <Truck className="w-5 h-5 text-amber-600 group-hover:text-white" />
-              </div>
-            </div>
+        ) : (
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <StatCard
+              index={0}
+              icon={Layers}
+              title="Total Reported Concerns"
+              value={dashboardData?.total_concerns ?? 0}
+              subtitle="My total reports"
+              loading={dashboardLoading}
+            />
+            <StatCard
+              index={1}
+              icon={Clock}
+              title="Pending Concerns"
+              value={dashboardData?.pending_concerns ?? 0}
+              subtitle="Awaiting resolution"
+              loading={dashboardLoading}
+            />
+            <StatCard
+              index={2}
+              icon={CheckCircle2}
+              title="Resolved Concerns"
+              value={dashboardData?.resolved_concerns ?? 0}
+              subtitle="Successfully resolved"
+              loading={dashboardLoading}
+            />
           </div>
+        )}
 
-          <div className="group bg-white/90 backdrop-blur-xl rounded-2xl border border-green-100 shadow-lg shadow-green-900/10 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Resolved Concerns</p>
-                <p className="text-3xl font-bold text-[#0B3D2E] mt-2">{stats.resolvedReports}</p>
-                <p className="text-xs text-gray-400 mt-1">Successfully fixed</p>
-              </div>
-              <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center group-hover:bg-green-600 transition-colors shrink-0">
-                <CircleCheck className="w-5 h-5 text-green-700 group-hover:text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Suggest CTA Button */}
-        <div className="flex justify-center mb-8">
-          <button
-            onClick={openSuggest}
-            className="flex items-center gap-2 bg-gradient-to-br from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-md shadow-emerald-900/10 transition-all"
+        {/* Raise Concern CTA */}
+        <div className="mb-10 flex justify-center">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            type="button"
+            onClick={() => navigate("/report-concern")}
+            className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-[#005B4F] to-[#00473e] px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:shadow-lg"
           >
-            <MapPin className="w-4 h-4" /> Suggest New Waste Pick Point
-          </button>
+            <AlertCircle className="h-5 w-5 text-emerald-300" />
+            Raise Concerns
+            <ChevronRight className="h-5 w-5" />
+          </motion.button>
         </div>
 
-        {/* Concerns Dynamic Table */}
-        <div className="bg-white/85 backdrop-blur-xl rounded-3xl shadow-xl ring-1 ring-white/60 border border-white/40 p-6 sm:p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-100 flex items-center justify-center">
-              <ClipboardList className="w-5 h-5 text-emerald-700" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-[#0B3D2E]">My Concerns List</h2>
-              <p className="text-sm text-gray-500">Everything you've reported, and where it stands.</p>
-            </div>
+        {/* Concerns List */}
+        <section className="mb-10">
+          <div className="mb-4 flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-emerald-600" />
+            <h2 className="text-lg font-bold text-slate-900">
+              My Concerns List
+            </h2>
           </div>
 
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-              <p className="text-sm text-gray-500 font-medium">Fetching concerns from server...</p>
-            </div>
-          ) : concerns.length === 0 ? (
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 px-5 py-10 text-center">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
-                <ClipboardList className="w-5 h-5 text-emerald-600" />
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            {concernsError ? (
+              <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+                <AlertCircle className="h-6 w-6 text-red-500" />
+                <p className="text-sm font-medium text-slate-700">
+                  Unable to load your concerns.
+                </p>
+                <button
+                  onClick={fetchConcerns}
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Retry
+                </button>
               </div>
-              <p className="text-sm font-semibold text-[#0B3D2E] mb-1">No concerns reported yet.</p>
-              <p className="text-xs text-gray-500 mb-4">
-                Report a waste-related issue and help keep your city clean.
-              </p>
-              <button className="inline-flex items-center gap-1.5 bg-[#0B3D2E] text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-[#0f4d3a] transition-colors">
-                Raise A Concern
-              </button>
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wide">
-                      <th className="text-left font-semibold px-5 py-3">Category</th>
-                      <th className="text-left font-semibold px-5 py-3">Reported Date</th>
-                      <th className="text-left font-semibold px-5 py-3">Status</th>
-                      <th className="text-left font-semibold px-5 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {concerns.map((c) => (
-                      <tr key={c.id} className="border-t border-gray-100 hover:bg-emerald-50/40 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <CategoryIcon category={c.category} />
-                            <span className="font-medium text-[#123B2E]">{c.category}</span>
+            ) : concernsLoading ? (
+              <div className="space-y-3 p-5">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-12 animate-pulse rounded-lg bg-slate-100"
+                  />
+                ))}
+              </div>
+            ) : concerns.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+                <ClipboardList className="h-8 w-8 text-slate-300" />
+                <p className="text-sm font-medium text-slate-600">
+                  No concerns reported yet.
+                </p>
+                <p className="text-xs text-slate-400">
+                  Concerns you report will show up here.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="hidden overflow-x-auto sm:block">
+                  <table className="w-full min-w-[720px] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500">
+                        <th className="pl-12 pr-5 py-3 font-medium text-left">
+                          Category
+                        </th>
+                        <th className="px-5 py-3 font-medium text-left">
+                          Location
+                        </th>
+                        <th className="px-5 py-3 font-medium text-left">
+                          Reported Date
+                        </th>
+                        <th className="px-5 py-3 font-medium text-left">
+                          Priority
+                        </th>
+                        <th className="px-5 py-3 font-medium text-left">
+                          Status
+                        </th>
+                        <th
+                          colSpan={2}
+                          className="pl-5 pr-12 py-3 font-medium text-center"
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {concerns.map((concern) => {
+                        const concernId = concern.id || concern._id;
+                        const statusStyle = getConcernStatusStyle(
+                          concern.status,
+                        );
+                        const CategoryIcon = getCategoryIcon(concern.category);
+                        const canDelete = DELETABLE_STATUSES.includes(
+                          String(concern.status).toLowerCase(),
+                        );
+                        const isExpanded = expandedConcernId === concernId;
+
+                        return (
+                          <Fragment key={concernId}>
+                            <tr className="transition hover:bg-slate-50/60">
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                                    <CategoryIcon className="h-4 w-4" />
+                                  </span>
+                                  <span className="font-medium text-slate-800">
+                                    {concern.category || "General"}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="max-w-[220px] truncate px-5 py-3.5 text-slate-600">
+                                {formatLocation(concern.location)}
+                              </td>
+                              <td className="px-5 py-3.5 text-slate-600">
+                                {formatDate(concern.created_at)}
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <span
+                                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${getPriorityStyle(concern.priority)}`}
+                                >
+                                  {concern.priority || "N/A"}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <StatusBadge
+                                  styleClass={statusStyle.badge}
+                                  label={statusStyle.label}
+                                  dot={statusStyle.dot}
+                                />
+                              </td>
+
+                              {/* First Action Column: Delete Button */}
+                              <td className="pl-5 pr-1 py-3 text-right">
+                                {canDelete && (
+                                  <button
+                                    onClick={() => setConcernToDelete(concern)}
+                                    aria-label="Delete concern"
+                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 inline-block"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </td>
+
+                              {/* Second Action Column: View Button */}
+                              <td className="pl-1 pr-12 py-3.5 text-right">
+                                <button
+                                  onClick={() =>
+                                    setExpandedConcernId(
+                                      isExpanded ? null : concernId,
+                                    )
+                                  }
+                                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 ml-auto"
+                                >
+                                  View
+                                  <ChevronRight
+                                    className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                                  />
+                                </button>
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr className="bg-slate-50/60">
+                                <td
+                                  colSpan={7}
+                                  className="px-5 py-4 text-sm text-slate-600"
+                                >
+                                  <div className="space-y-3">
+                                    <div>
+                                      <span className="font-medium text-slate-700">
+                                        Description:{" "}
+                                      </span>
+                                      {concern.description ||
+                                        "No additional description provided."}
+                                    </div>
+
+                                    {/* Isolated Image Gallery Component */}
+                                    <ConcernImageGallery
+                                      concernId={concernId}
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="divide-y divide-slate-100 sm:hidden">
+                  {concerns.map((concern) => {
+                    const concernId = concern.id || concern._id;
+                    const statusStyle = getConcernStatusStyle(concern.status);
+                    const CategoryIcon = getCategoryIcon(concern.category);
+                    const canDelete = DELETABLE_STATUSES.includes(
+                      String(concern.status).toLowerCase(),
+                    );
+                    const isExpanded = expandedConcernId === concernId;
+
+                    return (
+                      <div key={concernId} className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2.5">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                              <CategoryIcon className="h-4 w-4" />
+                            </span>
+                            <div>
+                              <p className="font-medium text-slate-800">
+                                {concern.category || "General"}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {formatLocation(concern.location)}
+                              </p>
+                            </div>
                           </div>
-                        </td>
-                        <td className="px-5 py-3.5 text-gray-600">{formatDate(c.reportedDate)}</td>
-                        <td className="px-5 py-3.5">
-                          <StatusBadge status={c.status} />
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => openView(c)}
-                              className="flex items-center gap-1 text-emerald-700 border border-emerald-200 hover:bg-emerald-50 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> View details
-                            </button>
-                            {c.status === "Pending" && (
+                          <div className="flex items-center gap-1">
+                            {canDelete && (
                               <button
-                                onClick={() => openDelete(c)}
-                                className="text-red-500 border border-red-200 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                                onClick={() => setConcernToDelete(concern)}
+                                aria-label="Delete concern"
+                                className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             )}
+
+                            <button
+                              onClick={() =>
+                                setExpandedConcernId(
+                                  isExpanded ? null : concernId,
+                                )
+                              }
+                              className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+                            >
+                              View
+                              <ChevronRight
+                                className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                              />
+                            </button>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <StatusBadge
+                            styleClass={statusStyle.badge}
+                            label={statusStyle.label}
+                            dot={statusStyle.dot}
+                          />
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${getPriorityStyle(concern.priority)}`}
+                          >
+                            {concern.priority || "N/A"}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {formatDate(concern.created_at)}
+                          </span>
+                        </div>
+
+                        {/* Mobile Expanded View */}
+                        {isExpanded && (
+                          <div className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-600">
+                            <p className="text-xs">
+                              <span className="font-medium text-slate-700">
+                                Description:{" "}
+                              </span>
+                              {concern.description ||
+                                "No additional description provided."}
+                            </p>
+
+                            <ConcernImageGallery concernId={concernId} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Suggestion History */}
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-emerald-600" />
+              <h2 className="text-lg font-bold text-slate-900">
+                Suggestion History
+              </h2>
             </div>
-          )}
-        </div>
+            {typeof dashboardData?.total_suggestions === "number" && (
+              <span className="text-xs font-medium text-slate-400">
+                {dashboardData.total_suggestions} total
+              </span>
+            )}
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            {suggestionsError ? (
+              <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+                <AlertCircle className="h-6 w-6 text-red-500" />
+                <p className="text-sm font-medium text-slate-700">
+                  Unable to load your suggestions.
+                </p>
+                <button
+                  onClick={fetchSuggestions}
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Retry
+                </button>
+              </div>
+            ) : suggestionsLoading ? (
+              <div className="space-y-3 p-5">
+                {[...Array(2)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-16 animate-pulse rounded-lg bg-slate-100"
+                  />
+                ))}
+              </div>
+            ) : suggestions.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+                <MapPin className="h-8 w-8 text-slate-300" />
+                <p className="text-sm font-medium text-slate-600">
+                  No suggestions submitted yet.
+                </p>
+                <p className="text-xs text-slate-400">
+                  Suggest a new waste pick point to get started.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {suggestions.map((suggestion) => {
+                  const sugId = suggestion.id || suggestion._id;
+                  return (
+                    <div key={sugId} className="p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-slate-800">
+                            {suggestion.title || `Point #${sugId}`}
+                          </p>
+                          {suggestion.suggestion_type && (
+                            <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
+                              {toTitleCase(suggestion.suggestion_type)}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${getSuggestionStatusStyle(suggestion.status)}`}
+                        >
+                          {toTitleCase(suggestion.status || "pending")}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-sm text-slate-600">
+                        {suggestion.description ||
+                          `Lat: ${suggestion.latitude}, Lng: ${suggestion.longitude}`}
+                      </p>
+                      <p className="mt-2 text-xs text-slate-400">
+                        Submitted {formatDate(suggestion.created_at)}
+                      </p>
+                      {suggestion.admin_reply && (
+                        <div className="mt-3 rounded-lg bg-emerald-50/70 px-3.5 py-2.5 text-sm text-emerald-800">
+                          <span className="font-medium">Admin reply: </span>
+                          {suggestion.admin_reply}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
       </main>
 
-      {/* Modal - View Concern */}
-      <Modal open={Boolean(viewConcern)} onClose={closeView}>
-        {viewConcern && (
+      {/* Suggest Drawer */}
+      <AnimatePresence>
+        {drawerOpen && (
           <>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-[#0B3D2E]">Concern Details</h2>
-              <button
-                onClick={closeView}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1.5 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <Field label="Category">
-                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gray-50 text-sm text-gray-700">
-                  <CategoryIcon category={viewConcern.category} />
-                  {viewConcern.category}
-                </div>
-              </Field>
-              <Field label="Status">
-                <div className="px-3.5 py-2.5 rounded-xl bg-gray-50">
-                  <StatusBadge status={viewConcern.status} />
-                </div>
-              </Field>
-              <Field label="Reported">
-                <div className="px-3.5 py-2.5 rounded-xl bg-gray-50 text-sm text-gray-700">
-                  {formatDateLong(viewConcern.reportedDate)}
-                </div>
-              </Field>
-              {viewConcern.location && (
-                <Field label="Location">
-                  <div className="px-3.5 py-2.5 rounded-xl bg-gray-50 text-sm text-gray-700">
-                    {viewConcern.location}
-                  </div>
-                </Field>
-              )}
-              {viewConcern.description && (
-                <Field label="Description">
-                  <div className="px-3.5 py-2.5 rounded-xl bg-gray-50 text-sm text-gray-700">
-                    {viewConcern.description}
-                  </div>
-                </Field>
-              )}
-              {viewConcern.assignedTo && (
-                <Field label="Assigned To">
-                  <div className="px-3.5 py-2.5 rounded-xl bg-gray-50 text-sm text-gray-700">
-                    {viewConcern.assignedTo}
-                  </div>
-                </Field>
-              )}
-            </div>
-            <button
-              onClick={closeView}
-              className="w-full mt-7 py-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-sm font-semibold hover:from-emerald-600 hover:to-emerald-800 transition-all"
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeDrawer}
+              className="fixed inset-0 z-[900] bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "tween", duration: 0.3, ease: "easeOut" }}
+              className="fixed right-0 top-0 z-[901] flex h-full w-full max-w-md flex-col bg-white shadow-2xl"
             >
-              Close
-            </button>
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+                <h3 className="text-lg font-bold text-slate-900">
+                  Suggest New Waste Pick Point
+                </h3>
+                <button
+                  onClick={closeDrawer}
+                  aria-label="Close"
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={handleSubmitSuggestion}
+                className="flex flex-1 flex-col overflow-y-auto px-6 py-5"
+              >
+                <label className="mb-2 text-sm font-medium text-slate-700">
+                  Select Location
+                </label>
+                <div
+                  className="h-64 w-full shrink-0 overflow-hidden rounded-xl border border-slate-200"
+                  style={{ height: "256px" }}
+                >
+                  <MapContainer
+                    center={[DEFAULT_CENTER.lat, DEFAULT_CENTER.lng]}
+                    zoom={13}
+                    scrollWheelZoom
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <MapReadyFixer />
+                    <LocationPicker
+                      position={[selectedLocation.lat, selectedLocation.lng]}
+                      onSelect={(latlng) =>
+                        setSelectedLocation({
+                          lat: latlng.lat,
+                          lng: latlng.lng,
+                        })
+                      }
+                    />
+                  </MapContainer>
+                </div>
+                <p className="mt-2 text-xs text-slate-400">
+                  Tap the map or drag the pin to choose a spot.
+                </p>
+
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-slate-50 px-3 py-2">
+                    <p className="text-[11px] font-medium uppercase text-slate-400">
+                      Latitude
+                    </p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {selectedLocation.lat.toFixed(6)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 px-3 py-2">
+                    <p className="text-[11px] font-medium uppercase text-slate-400">
+                      Longitude
+                    </p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {selectedLocation.lng.toFixed(6)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Suggestion Type
+                  </label>
+                  <select
+                    value={suggestionForm.suggestion_type}
+                    onChange={(e) =>
+                      setSuggestionForm((prev) => ({
+                        ...prev,
+                        suggestion_type: e.target.value,
+                      }))
+                    }
+                    className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 ${
+                      formErrors.suggestion_type
+                        ? "border-red-300"
+                        : "border-slate-200"
+                    }`}
+                  >
+                    {SUGGESTION_TYPES.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.suggestion_type && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {formErrors.suggestion_type}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Suggestion Title
+                  </label>
+                  <input
+                    type="text"
+                    value={suggestionForm.title}
+                    onChange={(e) =>
+                      setSuggestionForm((prev) => ({
+                        ...prev,
+                        title: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g. Need a bin near the park entrance"
+                    className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 ${
+                      formErrors.title ? "border-red-300" : "border-slate-200"
+                    }`}
+                  />
+                  {formErrors.title && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {formErrors.title}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Description
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={suggestionForm.description}
+                    onChange={(e) =>
+                      setSuggestionForm((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    placeholder="Describe why a waste collection point/bin is needed here..."
+                    className={`w-full resize-none rounded-lg border px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 ${
+                      formErrors.description
+                        ? "border-red-300"
+                        : "border-slate-200"
+                    }`}
+                  />
+                  {formErrors.description && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {formErrors.description}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#005B4F] to-[#00473e] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:shadow-md disabled:opacity-60"
+                >
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {submitting ? "Submitting…" : "Submit Suggestion"}
+                </button>
+              </form>
+            </motion.div>
           </>
         )}
-      </Modal>
+      </AnimatePresence>
 
-      {/* Modal - Delete Concern */}
-      <Modal open={Boolean(deleteTarget)} onClose={closeDelete} narrow>
-        {deleteTarget && (
-          <div className="text-center py-2">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-bold text-red-600 mx-auto">Delete Concern?</h2>
-              <button onClick={closeDelete} className="text-gray-400 hover:text-gray-600 absolute right-6 top-6">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto my-4">
-              <AlertTriangle className="w-7 h-7 text-red-500" />
-            </div>
-            <p className="text-sm text-gray-500 px-2 mb-7">
-              Are you sure you want to delete your{" "}
-              <span className="font-semibold text-gray-700">{deleteTarget.category}</span> report?
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={confirmDelete}
-                disabled={actionLoading}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-              >
-                {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Delete
-              </button>
-              <button
-                onClick={closeDelete}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <ConfirmDeleteDialog
+        concern={concernToDelete}
+        deleting={deletingConcern}
+        onCancel={() => (!deletingConcern ? setConcernToDelete(null) : null)}
+        onConfirm={handleConfirmDelete}
+      />
 
-      {/* Modal - Suggest Waste Pick Point */}
-      <Modal open={showSuggest} onClose={closeSuggest}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-[#0B3D2E]">Suggest a Waste Pick Point</h2>
-          <button
-            onClick={closeSuggest}
-            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1.5 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="space-y-4">
-          <Field label="Location">
-            <input
-              value={suggestForm.location}
-              onChange={(e) => setSuggestForm({ ...suggestForm, location: e.target.value })}
-              placeholder="e.g. Near Sector 4 park entrance"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400"
-            />
-          </Field>
-          <Field label="Reason">
-            <input
-              value={suggestForm.reason}
-              onChange={(e) => setSuggestForm({ ...suggestForm, reason: e.target.value })}
-              placeholder="e.g. High foot traffic, no bin within 200m"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400"
-            />
-          </Field>
-          <Field label="Description (optional)">
-            <textarea
-              value={suggestForm.description}
-              onChange={(e) => setSuggestForm({ ...suggestForm, description: e.target.value })}
-              placeholder="Any extra detail that helps evaluate the spot"
-              rows={3}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 resize-none"
-            />
-          </Field>
-        </div>
-        <button
-          onClick={submitSuggestion}
-          disabled={actionLoading}
-          className="w-full mt-7 py-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-sm font-semibold hover:from-emerald-600 hover:to-emerald-800 transition-all flex items-center justify-center gap-2"
-        >
-          {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-          Submit Suggestion
-        </button>
-      </Modal>
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
-      <Toast message={toast} />
+      {/* Floating AI Chatbot */}
       <FloatingChatbot />
     </div>
   );

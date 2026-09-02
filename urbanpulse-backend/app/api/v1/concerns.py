@@ -1,4 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+)
+
 from sqlalchemy.orm import Session
 
 from app.dependencies.auth import get_current_user
@@ -7,13 +13,14 @@ from app.models.concern import ConcernStatus
 from app.models.user import User
 from app.schemas.concern import (
     ConcernCreate,
+    ConcernCreateResponse,
     ConcernHistoryResponse,
     ConcernResponse,
     ConcernStatusUpdate,
     ConcernSupportResponse,
     ConcernUpdate,
 )
-from app.services import concern_service
+from app.services import concern_services
 
 
 router = APIRouter(
@@ -44,6 +51,8 @@ def database_health(
         "test_result": result.scalar(),
     }
 
+# CREATE CONCERN
+# AUTHENTICATED ONLY
 
 @router.post(
     "/",
@@ -55,14 +64,35 @@ def create_concern(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    concern = concern_service.create_concern(
+    result = concern_services.create_concern(
         db=db,
         concern_data=concern_data,
         reported_by=current_user.id,
     )
 
-    return concern
+    if result["distance_meters"] is not None:
+        concern = result["concern"]
 
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": (
+                    "A similar concern already exists "
+                    "within 50 meters."
+                ),
+                "existing_concern_id": concern.id,
+                "distance_meters": result[
+                    "distance_meters"
+                ],
+                "category": concern.category,
+                "status": concern.status.value,
+            },
+        )
+
+    return result["concern"]
+
+# GET ALL CONCERNS
+# AUTHENTICATED ONLY
 
 @router.get(
     "/",
@@ -72,8 +102,10 @@ def get_concerns(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return concern_service.get_concerns(db)
+    return concern_services.get_concerns(db)
 
+# GET SINGLE CONCERN
+# AUTHENTICATED ONLY
 
 @router.get(
     "/{concern_id}",
@@ -84,7 +116,7 @@ def get_concern(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    concern = concern_service.get_concern_by_id(
+    concern = concern_services.get_concern_by_id(
         db=db,
         concern_id=concern_id,
     )
@@ -97,6 +129,7 @@ def get_concern(
 
     return concern
 
+# UPDATE CONCERN
 
 @router.put(
     "/{concern_id}",
@@ -108,7 +141,7 @@ def update_concern(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    concern = concern_service.get_concern_by_id(
+    concern = concern_services.get_concern_by_id(
         db=db,
         concern_id=concern_id,
     )
@@ -122,15 +155,18 @@ def update_concern(
     if concern.reported_by != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only update your own concerns",
+            detail=(
+                "You can only update your own concerns"
+            ),
         )
 
-    return concern_service.update_concern(
+    return concern_services.update_concern(
         db=db,
         concern=concern,
         concern_data=concern_data,
     )
 
+# DELETE CONCERN
 
 @router.delete(
     "/{concern_id}",
@@ -141,7 +177,7 @@ def delete_concern(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    concern = concern_service.get_concern_by_id(
+    concern = concern_services.get_concern_by_id(
         db=db,
         concern_id=concern_id,
     )
@@ -155,16 +191,19 @@ def delete_concern(
     if concern.reported_by != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only delete your own concerns",
+            detail=(
+                "You can only delete your own concerns"
+            ),
         )
 
-    concern_service.delete_concern(
+    concern_services.delete_concern(
         db=db,
         concern=concern,
     )
 
     return None
 
+# STATUS
 
 @router.patch(
     "/{concern_id}/status",
@@ -176,7 +215,7 @@ def update_concern_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    concern = concern_service.get_concern_by_id(
+    concern = concern_services.get_concern_by_id(
         db=db,
         concern_id=concern_id,
     )
@@ -187,28 +226,40 @@ def update_concern_status(
             detail="Concern not found",
         )
 
-    if current_user.role.value not in {"admin", "worker"}:
+    if current_user.role.value not in {
+        "admin",
+        "worker",
+    }:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins and workers can change concern status",
+            detail=(
+                "Only admins and workers can "
+                "change concern status"
+            ),
         )
 
-    updated_concern = concern_service.update_concern_status(
-        db=db,
-        concern=concern,
-        new_status=status_data.status,
-        changed_by=current_user.id,
-        remarks=status_data.remarks,
+    updated_concern = (
+        concern_services.update_concern_status(
+            db=db,
+            concern=concern,
+            new_status=status_data.status,
+            changed_by=current_user.id,
+            remarks=status_data.remarks,
+        )
     )
 
     if updated_concern is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Concern is already in the requested status",
+            detail=(
+                "Concern is already in the "
+                "requested status"
+            ),
         )
 
     return updated_concern
 
+# HISTORY
 
 @router.get(
     "/{concern_id}/history",
@@ -219,7 +270,7 @@ def get_concern_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    concern = concern_service.get_concern_by_id(
+    concern = concern_services.get_concern_by_id(
         db=db,
         concern_id=concern_id,
     )
@@ -230,11 +281,12 @@ def get_concern_history(
             detail="Concern not found",
         )
 
-    return concern_service.get_concern_history(
+    return concern_services.get_concern_history(
         db=db,
         concern_id=concern_id,
     )
 
+# SUPPORT
 
 @router.post(
     "/{concern_id}/support",
@@ -245,7 +297,7 @@ def add_concern_support(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    concern = concern_service.get_concern_by_id(
+    concern = concern_services.get_concern_by_id(
         db=db,
         concern_id=concern_id,
     )
@@ -256,7 +308,7 @@ def add_concern_support(
             detail="Concern not found",
         )
 
-    support = concern_service.add_concern_support(
+    support = concern_services.add_concern_support(
         db=db,
         concern_id=concern_id,
         user_id=current_user.id,
@@ -265,7 +317,10 @@ def add_concern_support(
     if support is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="You have already supported this concern",
+            detail=(
+                "You have already supported "
+                "this concern"
+            ),
         )
 
     return support
@@ -280,7 +335,7 @@ def remove_concern_support(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    concern = concern_service.get_concern_by_id(
+    concern = concern_services.get_concern_by_id(
         db=db,
         concern_id=concern_id,
     )
@@ -291,7 +346,7 @@ def remove_concern_support(
             detail="Concern not found",
         )
 
-    removed = concern_service.remove_concern_support(
+    removed = concern_services.remove_concern_support(
         db=db,
         concern_id=concern_id,
         user_id=current_user.id,
@@ -300,10 +355,13 @@ def remove_concern_support(
     if not removed:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="You have not supported this concern",
+            detail=(
+                "You have not supported "
+                "this concern"
+            ),
         )
 
-    return concern_service.get_concern_support(
+    return concern_services.get_concern_support(
         db=db,
         concern_id=concern_id,
         user_id=current_user.id,
@@ -319,7 +377,7 @@ def get_concern_support(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    concern = concern_service.get_concern_by_id(
+    concern = concern_services.get_concern_by_id(
         db=db,
         concern_id=concern_id,
     )
@@ -330,7 +388,7 @@ def get_concern_support(
             detail="Concern not found",
         )
 
-    return concern_service.get_concern_support(
+    return concern_services.get_concern_support(
         db=db,
         concern_id=concern_id,
         user_id=current_user.id,

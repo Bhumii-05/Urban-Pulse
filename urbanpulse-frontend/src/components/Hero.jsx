@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, Phone } from 'lucide-react'
 import background from '../assets/urbanpulse-background.png'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function Hero() {
   const navigate = useNavigate()
@@ -12,14 +12,11 @@ export default function Hero() {
     >
       {/* Background */}
       <div
-  className="absolute inset-0 bg-cover bg-[center_68%] bg-no-repeat"
-  style={{
-    backgroundImage: `url(${background})`,
-  }}
-/>
-
-      {/* Very subtle overlay — keeps background visible */}
-      
+        className="absolute inset-0 bg-cover bg-[center_68%] bg-no-repeat"
+        style={{
+          backgroundImage: `url(${background})`,
+        }}
+      />
 
       {/* Hero Content */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 text-center -translate-y-8">
@@ -32,11 +29,11 @@ export default function Hero() {
           className="mb-6 inline-flex items-center rounded-full border border-gray-200 bg-white/90 px-5 py-2 shadow-sm backdrop-blur-sm"
         >
           <span
-  className="text-[12px] font-semibold tracking-wide"
-  style={{ color: '#159A68' }}
->
-  SMARTER WASTE MANAGEMENT. CLEANER CITIES.
-</span>
+            className="text-[12px] font-semibold tracking-wide"
+            style={{ color: '#159A68' }}
+          >
+            SMARTER WASTE MANAGEMENT. CLEANER CITIES.
+          </span>
         </motion.div>
 
         {/* Main Heading */}
@@ -75,22 +72,22 @@ export default function Hero() {
           transition={{ duration: 0.7, delay: 0.45 }}
           className="mt-8 flex flex-col items-center gap-5"
         >
-          {/* Explore Features */}
-          <button
-            onClick={() => navigate('/report-concern')}
+          {/* Join Urban-Pulse Button */}
+          <Link
+            to="/signup"
             className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-1"
             style={{
               backgroundColor: '#159A68',
               boxShadow: '0 8px 25px rgba(21, 154, 104, 0.25)',
             }}
           >
-            RAISE A CONCERN
+            Join Urban-Pulse
 
             <ArrowRight
               size={17}
               className="transition-transform duration-200 group-hover:translate-x-1"
             />
-          </button>
+          </Link>
 
           {/* Phone */}
           <a
@@ -102,7 +99,6 @@ export default function Hero() {
             1800-123-URBAN
           </a>
         </motion.div>
-
 
       </div>
       

@@ -10,6 +10,7 @@ from app.api.v1 import collection_points
 from app.api.v1 import collection_routes
 from app.api.v1 import concern_images
 from app.api.v1 import concerns
+from app.api.v1 import chatbot
 from app.api.v1 import waste_bins
 from app.api.v1 import maps
 from app.api.v1.suggestions import (
@@ -139,5 +140,10 @@ app.include_router(
 
 app.include_router(
     analytics.router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    chatbot.router,
     prefix="/api/v1",
 )

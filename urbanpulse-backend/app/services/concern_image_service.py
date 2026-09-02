@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import UploadFile
@@ -15,7 +14,6 @@ from app.services.cloudinary_service import (
     delete_image,
     upload_image,
 )
-
 
 ALLOWED_CONTENT_TYPES = {
     "image/jpeg",
@@ -36,14 +34,10 @@ class ConcernImageValidationError(Exception):
 
 def validate_image(file: UploadFile) -> None:
     if not file.filename:
-        raise ConcernImageValidationError(
-            "Image file is required"
-        )
+        raise ConcernImageValidationError("Image file is required")
 
     if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise ConcernImageValidationError(
-            "Only JPEG, PNG, and WEBP images are allowed"
-        )
+        raise ConcernImageValidationError("Only JPEG, PNG, and WEBP images are allowed")
 
     raw_file = file.file
 
@@ -52,14 +46,10 @@ def validate_image(file: UploadFile) -> None:
     raw_file.seek(0)
 
     if file_size == 0:
-        raise ConcernImageValidationError(
-            "Uploaded image is empty"
-        )
+        raise ConcernImageValidationError("Uploaded image is empty")
 
     if file_size > settings.MAX_IMAGE_SIZE_BYTES:
-        raise ConcernImageValidationError(
-            "Image size must not exceed 5 MB"
-        )
+        raise ConcernImageValidationError("Image size must not exceed 5 MB")
 
     try:
         with Image.open(raw_file) as image:
@@ -75,10 +65,7 @@ def validate_image(file: UploadFile) -> None:
 
     except UnidentifiedImageError as exc:
         raw_file.seek(0)
-
-        raise ConcernImageValidationError(
-            "Uploaded file is not a valid image"
-        ) from exc
+        raise ConcernImageValidationError("Uploaded file is not a valid image") from exc
 
     except ConcernImageValidationError:
         raw_file.seek(0)
@@ -86,10 +73,7 @@ def validate_image(file: UploadFile) -> None:
 
     except Exception as exc:
         raw_file.seek(0)
-
-        raise ConcernImageValidationError(
-            "Unable to validate uploaded image"
-        ) from exc
+        raise ConcernImageValidationError("Unable to validate uploaded image") from exc
 
     raw_file.seek(0)
 
@@ -101,24 +85,23 @@ def create_concern_image(
 ) -> ConcernImage:
     validate_image(file)
 
-    unique_id = uuid4().hex
+    file.file.seek(0)
 
-    public_id = (
-        f"{settings.CLOUDINARY_FOLDER}/"
-        f"concern_{concern_id}_{unique_id}"
-    )
+    unique_id = uuid4().hex
+    clean_folder = (settings.CLOUDINARY_FOLDER or "urbanpulse/concerns").strip("/")
+    public_id_name = f"concern_{concern_id}_{unique_id}"
 
     cloudinary_result = upload_image(
         file=file.file,
-        folder="",
-        public_id=public_id,
+        folder=clean_folder,
+        public_id=public_id_name,
     )
 
     concern_image = ConcernImage(
         concern_id=concern_id,
         image_url=cloudinary_result["secure_url"],
         cloudinary_public_id=cloudinary_result["public_id"],
-        uploaded_at=datetime.utcnow(),
+        uploaded_at=datetime.now(timezone.utc),
     )
 
     try:
@@ -128,14 +111,10 @@ def create_concern_image(
 
     except Exception:
         db.rollback()
-
         try:
-            delete_image(
-                cloudinary_result["public_id"]
-            )
+            delete_image(cloudinary_result["public_id"])
         except CloudinaryServiceError:
             pass
-
         raise
 
     return concern_image
@@ -147,9 +126,7 @@ def get_concern_images(
 ) -> list[ConcernImage]:
     return (
         db.query(ConcernImage)
-        .filter(
-            ConcernImage.concern_id == concern_id
-        )
+        .filter(ConcernImage.concern_id == concern_id)
         .order_by(ConcernImage.uploaded_at.desc())
         .all()
     )
@@ -174,9 +151,6 @@ def delete_concern_image(
     db: Session,
     concern_image: ConcernImage,
 ) -> None:
-    delete_image(
-        concern_image.cloudinary_public_id
-    )
-
+    delete_image(concern_image.cloudinary_public_id)
     db.delete(concern_image)
     db.commit()

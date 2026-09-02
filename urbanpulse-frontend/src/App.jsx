@@ -5,6 +5,8 @@ import SignUp from './pages/SignUp'
 import CitizenDashboard from './pages/CitizenDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import ReportConcern from './pages/ReportConcern'
+import Profile from './pages/Profile'
+import WorkerDashboard from './pages/WorkerDashboard'
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
       <Route path="/citizen" element={<CitizenDashboard />} />
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/report-concern" element={<ReportConcern />} />
+      <Route path="/Profile" element={<Profile />} />
+      <Route path="/worker" element={<WorkerDashboard />} />
     
     </Routes>
   )
