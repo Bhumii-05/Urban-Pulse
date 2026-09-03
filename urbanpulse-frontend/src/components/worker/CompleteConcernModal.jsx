@@ -30,15 +30,19 @@ export default function CompleteConcernModal({
     setError(null);
     try {
       const concernId = assignment.concern_id || assignment.id;
-      // 1. Upload evidence photo if provided
+      
+      // 1. Upload resolution evidence photo if provided
       if (selectedFile && concernId) {
         await concernService.uploadConcernImage(concernId, selectedFile);
       }
+      
       // 2. Trigger parent completion hook
       await onCompleted(assignment.id, concernId);
       onClose();
     } catch (err) {
-      setError(err?.response?.data?.detail || "Failed to complete work order and upload evidence.");
+      setError(
+        err?.response?.data?.detail || "Failed to complete work order and upload evidence."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -59,7 +63,11 @@ export default function CompleteConcernModal({
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-full p-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 rounded-full p-1"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -122,7 +130,11 @@ export default function CompleteConcernModal({
               disabled={submitting}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition disabled:opacity-50"
             >
-              {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+              {submitting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Upload className="w-3.5 h-3.5" />
+              )}
               Submit & Complete
             </button>
           </div>

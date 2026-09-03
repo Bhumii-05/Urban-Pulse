@@ -19,6 +19,9 @@ from app.services.concern_image_service import (
     ConcernImageValidationError,
 )
 
+from app.models.assignment import Assignment
+from app.models.user import UserRole
+
 
 router = APIRouter(
     prefix="/concerns/{concern_id}/images",
@@ -38,7 +41,6 @@ def get_active_concern(
         )
         .first()
     )
-
 
 @router.post(
     "",
@@ -62,10 +64,36 @@ def upload_concern_image(
             detail="Concern not found",
         )
 
-    if concern.reported_by != current_user.id:
+    # 1. Block Admins from uploading evidence
+    user_role_str = str(getattr(current_user.role, "value", current_user.role)).lower()
+    if user_role_str == "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only upload images to your own concerns",
+            detail="Admins cannot upload concern evidence images",
+        )
+
+    # 2. Check if user is the reporting citizen
+    is_creator = concern.reported_by == current_user.id
+
+    # 3. Check if user is an assigned worker for this specific concern
+    is_assigned_worker = (
+        db.query(Assignment)
+        .filter(
+            Assignment.concern_id == concern_id,
+            Assignment.worker_id == current_user.id,
+        )
+        .first()
+        is not None
+    )
+
+    # 4. Check if user has worker role
+    is_worker = user_role_str == "worker"
+
+    # Allow if reporting citizen, assigned worker, or any worker handling field operations
+    if not (is_creator or is_assigned_worker or is_worker):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the reporting citizen or assigned workers can upload images to this concern",
         )
 
     try:
@@ -86,7 +114,7 @@ def upload_concern_image(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(exc),
         ) from exc
-
+    
 
 @router.get(
     "",
