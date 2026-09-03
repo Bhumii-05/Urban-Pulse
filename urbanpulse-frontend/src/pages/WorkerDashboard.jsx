@@ -27,6 +27,12 @@ import { coordsToLocationString } from "../api/location.service";
 /* ------------------------------------------------------------------ */
 const isNum = (v) => typeof v === "number" && !Number.isNaN(v);
 
+// Check karta hai agar text raw coordinates format me hai (jaise "22.5726, 88.3639")
+function isCoordinateString(str) {
+  if (!str || typeof str !== "string") return false;
+  return /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(str.trim());
+}
+
 function getStopCoords(stop) {
   const c = stop?.coordinates ?? stop?.coords ?? null;
   if (Array.isArray(c) && c.length >= 2 && isNum(c[0]) && isNum(c[1])) {
@@ -43,33 +49,40 @@ function getStopCoords(stop) {
   return null;
 }
 
-function resolveStopLocation(stop, index) {
+// Coordinates ki jagah Route Name return karta hai
+function resolveStopLocation(stop, index, currentRoute) {
+  const routeName =
+    currentRoute?.route_name ||
+    currentRoute?.name ||
+    stop?.route_name ||
+    (currentRoute?.route_number ? `Route #${currentRoute.route_number}` : "Assigned Route");
+
+  // Agar stop ka apna koi real street/area name hai to wahi dikhaye
+  if (stop?.point_name && !isCoordinateString(stop.point_name)) {
+    return stop.point_name;
+  }
   if (
     stop?.location &&
     typeof stop.location === "string" &&
     stop.location.trim() &&
-    stop.location !== "Unnamed location"
+    stop.location !== "Unnamed location" &&
+    !isCoordinateString(stop.location)
   ) {
     return stop.location;
   }
-  if (stop?.address || stop?.location_name || stop?.title) {
-    return stop.address || stop.location_name || stop.title;
+  if (stop?.address && !isCoordinateString(stop.address)) {
+    return stop.address;
   }
-  const coords = getStopCoords(stop);
-  if (coords) {
-    return coordsToLocationString(coords.lat.toFixed(4), coords.lng.toFixed(4));
-  }
-  if (stop?.waste_bin_id) {
-    return `Bin #${stop.waste_bin_id}`;
-  }
-  return `Stop #${stop?.sequence_order ?? index + 1}`;
+
+  // Agar raw lat/long coordinates the, to use Route Name aur Stop number se replace kare
+  return `${routeName} — Stop #${stop?.sequence_order ?? index + 1}`;
 }
 
-function normalizeStop(stop, index) {
+function normalizeStop(stop, index, currentRoute) {
   return {
     id: stop?.id ?? stop?._id ?? index + 1,
     row: stop?.sequence_order ?? index + 1,
-    location: resolveStopLocation(stop, index),
+    location: resolveStopLocation(stop, index, currentRoute),
     eta: stop?.estimated_arrival ?? stop?.eta ?? null,
     status:
       stop?.is_collected || String(stop?.status).toLowerCase() === "collected"
@@ -78,7 +91,7 @@ function normalizeStop(stop, index) {
         ? "issue"
         : "pending",
     issueReason: stop?.issue_reason ?? null,
-    coords: getStopCoords(stop),
+    coords: getStopCoords(stop), // Original coordinates safe hain maps/directions ke liye
     raw: stop,
   };
 }
@@ -89,7 +102,7 @@ function normalizeStop(stop, index) {
 export default function WorkerDashboard() {
   const [userName, setUserName] = useState("Worker");
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [activeTab, setActiveTab] = useState("route"); // "route" | "concerns"
+  const [activeTab, setActiveTab] = useState("route");
 
   // Route & Stops States
   const [routesList, setRoutesList] = useState([]);
@@ -105,13 +118,13 @@ export default function WorkerDashboard() {
   const [assignments, setAssignments] = useState([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
 
-  // UI Interactive States
+  // UI States
   const [mapOpen, setMapOpen] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [issueModalStop, setIssueModalStop] = useState(null);
   const [submittingIssue, setSubmittingIssue] = useState(false);
 
-  // 1. Resolve Logged-in User Profile
+  // 1. Resolve User Profile
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -134,7 +147,7 @@ export default function WorkerDashboard() {
     fetchUser();
   }, []);
 
-  // 2. Fetch All Assigned Routes
+  // 2. Fetch Assigned Routes
   const loadRoutes = useCallback(async () => {
     setRouteLoading(true);
     setRouteError(null);
@@ -156,7 +169,7 @@ export default function WorkerDashboard() {
     }
   }, []);
 
-  // 3. Fetch Stops for Selected Route
+  // 3. Fetch Stops for Selected Route (selectedRoute pass kiya normalizeStop me)
   const loadStops = useCallback(async () => {
     const routeId = selectedRoute?.id ?? selectedRoute?.route_id;
     if (!routeId) {
@@ -168,7 +181,7 @@ export default function WorkerDashboard() {
     try {
       const rawPoints = await workerService.getRouteStops(routeId);
       const list = Array.isArray(rawPoints) ? rawPoints : [];
-      setStops(list.map(normalizeStop));
+      setStops(list.map((stop, idx) => normalizeStop(stop, idx, selectedRoute)));
     } catch (err) {
       setStopsError("Failed to load collection stops for this route.");
     } finally {
@@ -176,7 +189,7 @@ export default function WorkerDashboard() {
     }
   }, [selectedRoute]);
 
-  // 4. Fetch Concern Assignments and Join Concern Data
+  // 4. Fetch Assignments
   const loadAssignments = useCallback(async () => {
     setAssignmentsLoading(true);
     try {
@@ -195,7 +208,6 @@ export default function WorkerDashboard() {
           ? rawConcerns.value
           : [];
 
-      // Filter by current worker ID if available
       const workerAssignments = assignmentList.filter((a) => {
         if (!currentUserId) return true;
         const wId = a.worker_id ?? a.user_id;
@@ -245,7 +257,7 @@ export default function WorkerDashboard() {
     loadStops();
   }, [loadStops]);
 
-  // 5. Dynamic Derived Metric Computations
+  // 5. Dynamic Counts
   const completedStops = useMemo(
     () => stops.filter((s) => s.status === "collected").length,
     [stops]
@@ -264,7 +276,7 @@ export default function WorkerDashboard() {
     [stops]
   );
 
-  // 6. Action Handlers
+  // 6. Actions
   const handleMarkDone = async (stop) => {
     if (!stop.id || actionLoadingId) return;
     setActionLoadingId(stop.id);
@@ -302,7 +314,6 @@ export default function WorkerDashboard() {
         priority: "high",
       });
 
-      // Update local stop status
       setStops((prev) =>
         prev.map((s) =>
           s.id === issueModalStop.id
@@ -312,7 +323,6 @@ export default function WorkerDashboard() {
       );
       setIssueModalStop(null);
     } catch (err) {
-      // Handle 409 Conflict gracefully (Active concern already exists for this stop)
       if (err?.response?.status === 409) {
         setStops((prev) =>
           prev.map((s) =>
@@ -364,7 +374,7 @@ export default function WorkerDashboard() {
       <WorkerHeader userName={userName} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Dynamic Metric Counter Strip */}
+        {/* Metric Strip */}
         <WorkerMetricStrip
           completedStops={completedStops}
           totalStops={stops.length}
@@ -474,7 +484,7 @@ export default function WorkerDashboard() {
           </>
         )}
 
-        {/* Tab 2: Assigned Citizen Concerns */}
+        {/* Tab 2: Assigned Concerns */}
         {activeTab === "concerns" && (
           <WorkerAssignmentsView
             assignments={assignments}
