@@ -46,3 +46,22 @@ class CollectionPointAnalyticsResponse(BaseModel):
 class WasteBinStatusAnalyticsResponse(BaseModel):
     status: str
     count: int
+
+class CategoryShare(BaseModel):
+    category: str
+    percentage: float
+
+class PublicImpactMetricsResponse(BaseModel):
+    # SLA & Problem Solving Percentages
+    resolution_rate: float
+    total_resolved: int
+    route_efficiency_rate: float
+    bin_health_rate: float
+
+    # Environmental Footprint Reductions
+    co2_reduction_percentage: float
+    landfill_diversion_percentage: float
+    fuel_saved_percentage: float
+
+    # Category Distribution for Visual Charts
+    category_distribution: list[CategoryShare]

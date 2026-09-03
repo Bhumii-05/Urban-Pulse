@@ -23,8 +23,9 @@ from app.services.analytics_services import (
     get_route_status_analytics,
     get_collection_point_analytics,
     get_waste_bin_status_analytics,
+    get_public_impact_metrics,
+    PublicImpactMetricsResponse,
 )
-
 
 router = APIRouter(
     prefix="/analytics",
@@ -134,3 +135,11 @@ def analytics_waste_bin_status(
     db: Session = Depends(get_db),
 ):
     return get_waste_bin_status_analytics(db)
+
+@router.get(
+    "/analytics/public-impact",
+    response_model=PublicImpactMetricsResponse,
+    summary="Public environmental and operational impact"
+)
+def read_public_impact(db: Session = Depends(get_db)):
+    return get_public_impact_metrics(db)
