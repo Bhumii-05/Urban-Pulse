@@ -27,10 +27,37 @@ import { coordsToLocationString } from "../api/location.service";
 /* ------------------------------------------------------------------ */
 const isNum = (v) => typeof v === "number" && !Number.isNaN(v);
 
-// Check karta hai agar text raw coordinates format me hai (jaise "22.5726, 88.3639")
 function isCoordinateString(str) {
   if (!str || typeof str !== "string") return false;
   return /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(str.trim());
+}
+
+function parseLocationToCoords(loc) {
+  if (!loc) return null;
+  if (typeof loc === "object") {
+    const lat = loc.latitude ?? loc.lat;
+    const lng = loc.longitude ?? loc.lng;
+    if (isNum(Number(lat)) && isNum(Number(lng))) {
+      return { lat: Number(lat), lng: Number(lng) };
+    }
+  }
+  if (typeof loc === "string" && loc.includes(",")) {
+    const [lat, lng] = loc.split(",").map((v) => Number(v.trim()));
+    if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+  }
+  return null;
+}
+
+function formatLocationText(loc) {
+  if (!loc) return "Assigned Location";
+  const coords = parseLocationToCoords(loc);
+  if (coords) {
+    return coordsToLocationString(coords.lat.toFixed(4), coords.lng.toFixed(4));
+  }
+  if (typeof loc === "object") {
+    return loc.address || loc.name || "Assigned Location";
+  }
+  return String(loc);
 }
 
 function getStopCoords(stop) {
@@ -49,7 +76,6 @@ function getStopCoords(stop) {
   return null;
 }
 
-// Coordinates ki jagah Route Name return karta hai
 function resolveStopLocation(stop, index, currentRoute) {
   const routeName =
     currentRoute?.route_name ||
@@ -57,7 +83,6 @@ function resolveStopLocation(stop, index, currentRoute) {
     stop?.route_name ||
     (currentRoute?.route_number ? `Route #${currentRoute.route_number}` : "Assigned Route");
 
-  // Agar stop ka apna koi real street/area name hai to wahi dikhaye
   if (stop?.point_name && !isCoordinateString(stop.point_name)) {
     return stop.point_name;
   }
@@ -74,7 +99,6 @@ function resolveStopLocation(stop, index, currentRoute) {
     return stop.address;
   }
 
-  // Agar raw lat/long coordinates the, to use Route Name aur Stop number se replace kare
   return `${routeName} — Stop #${stop?.sequence_order ?? index + 1}`;
 }
 
@@ -91,7 +115,7 @@ function normalizeStop(stop, index, currentRoute) {
         ? "issue"
         : "pending",
     issueReason: stop?.issue_reason ?? null,
-    coords: getStopCoords(stop), // Original coordinates safe hain maps/directions ke liye
+    coords: getStopCoords(stop),
     raw: stop,
   };
 }
@@ -169,7 +193,7 @@ export default function WorkerDashboard() {
     }
   }, []);
 
-  // 3. Fetch Stops for Selected Route (selectedRoute pass kiya normalizeStop me)
+  // 3. Fetch Stops for Selected Route
   const loadStops = useCallback(async () => {
     const routeId = selectedRoute?.id ?? selectedRoute?.route_id;
     if (!routeId) {
@@ -189,7 +213,7 @@ export default function WorkerDashboard() {
     }
   }, [selectedRoute]);
 
-  // 4. Fetch Assignments
+  // 4. Fetch Assignments & Mask Coordinates
   const loadAssignments = useCallback(async () => {
     setAssignmentsLoading(true);
     try {
@@ -218,6 +242,10 @@ export default function WorkerDashboard() {
         const matchingConcern = concernList.find(
           (c) => c.id === a.concern_id || c.id === a.point_id
         );
+
+        const rawLoc = matchingConcern?.location || a.location || null;
+        const coords = parseLocationToCoords(rawLoc);
+
         return {
           id: a.id,
           concern_id: a.concern_id || matchingConcern?.id,
@@ -226,13 +254,8 @@ export default function WorkerDashboard() {
             matchingConcern?.description ||
             a.description ||
             "Assigned citizen concern",
-          location:
-            typeof matchingConcern?.location === "object"
-              ? coordsToLocationString(
-                  matchingConcern.location.latitude,
-                  matchingConcern.location.longitude
-                )
-              : matchingConcern?.location || a.location || "Assigned Location",
+          location: formatLocationText(rawLoc),
+          coords: coords,
           status: (a.status || "pending").toLowerCase(),
           date: a.created_at
             ? new Date(a.created_at).toLocaleDateString()
@@ -374,7 +397,6 @@ export default function WorkerDashboard() {
       <WorkerHeader userName={userName} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Metric Strip */}
         <WorkerMetricStrip
           completedStops={completedStops}
           totalStops={stops.length}
@@ -383,7 +405,6 @@ export default function WorkerDashboard() {
           shiftStatus="Active"
         />
 
-        {/* Tab Switcher */}
         <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-gray-200/80 w-fit mb-6 shadow-sm">
           <button
             type="button"
@@ -410,7 +431,6 @@ export default function WorkerDashboard() {
           </button>
         </div>
 
-        {/* Tab 1: Collection Route & Map */}
         {activeTab === "route" && (
           <>
             {routeLoading ? (
@@ -422,9 +442,7 @@ export default function WorkerDashboard() {
               </div>
             ) : routeError ? (
               <div className="rounded-3xl bg-red-50/80 border border-red-200 shadow-xl p-10 flex flex-col items-center justify-center gap-3 text-center">
-                <p className="font-semibold text-xs text-red-700">
-                  {routeError}
-                </p>
+                <p className="font-semibold text-xs text-red-700">{routeError}</p>
                 <button
                   type="button"
                   onClick={loadRoutes}
@@ -484,7 +502,6 @@ export default function WorkerDashboard() {
           </>
         )}
 
-        {/* Tab 2: Assigned Concerns */}
         {activeTab === "concerns" && (
           <WorkerAssignmentsView
             assignments={assignments}
@@ -495,7 +512,6 @@ export default function WorkerDashboard() {
         )}
       </main>
 
-      {/* Report Issue Modal */}
       <ReportIssueModal
         stop={issueModalStop}
         onClose={() => setIssueModalStop(null)}

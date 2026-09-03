@@ -8,8 +8,70 @@ import {
   Camera,
   Loader2,
   Inbox,
+  ExternalLink,
 } from "lucide-react";
 import CompleteConcernModal from "./CompleteConcernModal";
+import { coordsToLocationString } from "../../api/location.service";
+
+/* ------------------------------------------------------------------ */
+/* Coordinate Parsing & Sanitization Helpers                          */
+/* ------------------------------------------------------------------ */
+
+// Extracts valid latitude and longitude from objects or coordinate strings
+function extractCoordinates(val) {
+  if (!val) return null;
+  if (typeof val === "object") {
+    const lat = val.latitude ?? val.lat;
+    const lng = val.longitude ?? val.lng;
+    if (lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
+      return { lat: Number(lat), lng: Number(lng) };
+    }
+  }
+  if (typeof val === "string") {
+    const match = val.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    }
+  }
+  return null;
+}
+
+// Converts coordinates to a readable area name, ensuring raw numbers never show
+function getDisplayLocation(loc, fallbackTitle) {
+  if (!loc) return fallbackTitle || "Assigned Area";
+
+  const coords = extractCoordinates(loc);
+  if (coords) {
+    const resolved = coordsToLocationString(coords.lat.toFixed(4), coords.lng.toFixed(4));
+    // Check that coordsToLocationString did not just return coordinates or empty text
+    if (resolved && !extractCoordinates(resolved)) {
+      return resolved;
+    }
+    return fallbackTitle || "Assigned Area";
+  }
+
+  if (typeof loc === "object") {
+    return loc.address || loc.name || fallbackTitle || "Assigned Area";
+  }
+
+  return String(loc);
+}
+
+// Cleans raw coordinates like (30.3148, 77.9660) or 30.3148, 77.9660 out of description texts
+function cleanDescription(desc) {
+  if (!desc) return "Resolve reported issue and upload completion proof.";
+  return desc
+    .replace(/\(?\s*-?\d+\.\d+\s*,\s*-?\d+\.\d+\s*\)?/g, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/:\s*:/g, ":")
+    .trim();
+}
+
+/* ------------------------------------------------------------------ */
+/* Component                                                          */
+/* ------------------------------------------------------------------ */
 
 export default function WorkerAssignmentsView({
   assignments = [],
@@ -30,6 +92,24 @@ export default function WorkerAssignmentsView({
       await onUpdateStatus(assignment.id, nextStatus);
     } finally {
       setActionLoadingId(null);
+    }
+  };
+
+  const handleOpenGoogleMaps = (coords, rawLocation) => {
+    const resolvedCoords = coords || extractCoordinates(rawLocation);
+    if (resolvedCoords && resolvedCoords.lat && resolvedCoords.lng) {
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${resolvedCoords.lat},${resolvedCoords.lng}`,
+        "_blank"
+      );
+      return;
+    }
+
+    if (rawLocation && typeof rawLocation === "string") {
+      window.open(
+        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rawLocation)}`,
+        "_blank"
+      );
     }
   };
 
@@ -64,6 +144,9 @@ export default function WorkerAssignmentsView({
             const isPendingOrAssigned =
               rawStatus === "pending" || rawStatus === "assigned" || rawStatus === "open";
 
+            const displayLocation = getDisplayLocation(item.location, item.title);
+            const displayDescription = cleanDescription(item.description);
+
             return (
               <div
                 key={item.id}
@@ -88,12 +171,25 @@ export default function WorkerAssignmentsView({
                   </div>
 
                   <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-                    {item.description || "Resolve reported issue and upload completion proof."}
+                    {displayDescription}
                   </p>
 
-                  <div className="flex items-center gap-2 text-[11px] text-gray-500 bg-gray-50 p-2 rounded-xl mb-3 font-mono">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span className="truncate">{item.location || "Assigned Coordinates"}</span>
+                  <div className="flex items-center justify-between gap-2 text-[11px] text-gray-600 bg-gray-50 p-2.5 rounded-xl mb-3 border border-gray-100">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="truncate font-medium">
+                        {displayLocation}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenGoogleMaps(item.coords, item.location)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 shrink-0 hover:underline"
+                      title="Open in Google Maps"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      Directions
+                    </button>
                   </div>
                 </div>
 
