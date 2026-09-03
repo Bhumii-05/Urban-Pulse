@@ -1,441 +1,184 @@
 # UrbanPulse Features
 
-This document describes the major functional features of the UrbanPulse Smart Waste Management System.
+This document describes the major functional and architectural features of the UrbanPulse Smart Waste Management System.
 
 ---
 
 # User Roles & Permissions
 
-UrbanPulse supports three authenticated roles along with public guest access. Each role has specific responsibilities and permissions.
+UrbanPulse implements strict Role-Based Access Control (RBAC) across three authenticated user roles: **Citizen**, **Sanitation Worker**, and **Administrator**.
 
 ---
 
-# 1. Guest User (Public)
+# 1. Citizen
 
-A guest can access the platform without creating an account.
-
-## Features
-
-- Report waste-related concerns anonymously.
-- Upload images while reporting concerns.
-- Share current location using browser GPS.
-- View active concerns on the public map.
-- Support (upvote) existing concerns.
-- Interact with the AI chatbot.
-- Browse general information about the platform.
-
----
-
-# 2. Citizen
-
-Registered citizens can access all Guest features along with additional services.
+Registered citizens report neighborhood waste problems, propose infrastructure additions, and monitor municipal resolutions.
 
 ## Features
 
-### Concern Management
-
-- Report concerns linked to their account.
-- Track reported concerns.
-- Edit or delete concerns while they are pending.
-- View complete concern history.
-
-### Pin New Collection Point And Missed Collection Reporting
-
-- Mark new pin location on map 
-- Report missed door-to-door waste collection.
-- Track the status of missed collection requests.
-
+### Concern Reporting & Management
+- Report waste concerns with category classification:
+  - **Illegal Dumping**
+  - **Overflowing Bin**
+  - **Missed Pickup**
+  - **Damaged Bin**
+- Attach GPS location coordinates via interactive map pin selection or browser geolocation.
+- Upload supporting evidence photos (stored securely via Cloudinary).
+- Real-time duplicate detection:
+  - Prevents filing identical reports for the same category within proximity of an active issue.
+  - Automatically redirects citizens to **Upvote/Support** existing neighborhood concerns to raise administrative priority.
+- Track status lifecycle of filed reports: `Pending` $\to$ `In Progress` $\to$ `Resolved`.
+- Edit or delete concerns while they remain in `Pending` review status.
+- Inspect full resolution details, including timestamped status updates.
 
 ### Suggestions
+- Submit suggestions for municipal infrastructure:
+  - Propose new public waste bin installations.
+  - Request new recurring collection points.
+  - General waste management improvements.
+- Track administrative review status (`Pending`, `Under Review`, `Approved`, `Rejected`).
+- View admin responses and status changes.
 
-- Submit suggestions for:
-  - New public waste bins
-  - New collection points
-  - Waste management improvements
-- View suggestion status.
-- Read admin responses.
+### Notifications & Activity Feed
+- Real-time updates when:
+  - A filed concern is assigned to a field worker.
+  - A concern is marked `Resolved` by field staff.
+  - An upvoted neighborhood concern status changes.
+  - A submitted suggestion is reviewed or accepted.
 
-### Notifications
-
-Receive notifications for:
-
-- Concern assigned
-- Concern resolved
-- Suggestion reviewed
-- Missed collection updates
-
-### Dashboard
-
-- View personal statistics.
-- Total concerns submitted.
-- Pending concerns.
-- Resolved concerns.
-- Suggestion history.
+### Citizen Dashboard
+- Personal statistics overview: total reported, pending, and resolved concerns.
+- List view of personal reports with live status badges.
+- Suggestion tracking ledger.
+- Notification inbox with read/unread tracking.
 
 ---
 
-# 3. Sanitation Worker
+# 2. Sanitation Worker
 
-Workers manage waste collection and assigned concerns.
+Field sanitation workers manage daily collection schedules, navigate pickup points, and execute assigned problem-resolution work orders.
 
 ## Features
 
-### Daily Collection Routes
-
-- View today's assigned route.
-- View collection points in sequence.
-
-### Collection Point Management
-
-For every assigned location, workers can:
-
-- Mark as Collected.
-- Report collection issue.
-
-Issue Reasons:
-
-- House Locked
-- Waste Not Ready
-- Road Blocked
-- Vehicle Issue
-- Other
-
-### Concern Assignments
-
-Workers can:
-
-- View assigned concerns.
-- Accept assignments.
-- Mark assignments as completed.
-- Upload proof image after completion.
-
-### Dashboard
-
-- Assigned routes.
-- Pending assignments.
-- Completed assignments.
-- Notifications.
-
----
-
-# 4. Administrator
-
-Administrators manage the entire system.
-
-## User Management
-
-- Create users.(opt)
-- Manage workers.
-- Verify accounts.(opt)
-- Activate or deactivate users.(opt)
-
-## Concern Management
-
-- View all reported concerns.
-- Assign priorities.
-- Assign workers.
-- Reject invalid reports.
-- Monitor concern history.
-
-## Route Management
-
-- Create collection routes.
-- Add collection points.
-- Assign workers.
-- Modify routes.
-- Delete routes.
-
-## Suggestion Management
-
-- Review citizen suggestions.
-- Accept suggestions.
-- Reject suggestions.
-- Provide feedback.
-
-## Waste Bin Management
-
-- Add public waste bins.
-- Update bin information.
-- Remove bins.
-- Monitor bin status.
-
-## Analytics Dashboard
-
-View system statistics including:
-
-- Total users
-- Active workers
-- Total concerns
-- Pending concerns
-- Resolved concerns
-- Worker performance(opt)
-- Ward-wise analytics(opt)
-
----
-
-# Core Features
-
----
-
-## 1. Concern Management
-
-The platform allows citizens and guests to report waste-related issues.
-
-### Concern Categories
-
-- Illegal Dumping
-- Overflowing Bin
-- Missed Collection
-- Public Bin Damage
-
-### Concern Workflow
-
-```text
-Report Concern
-      │
-      ▼
-Duplicate Check
-      │
-      ├── Existing Concern
-      │       │
-      │       ▼
-      │   Support Existing Concern
-      │
-      ▼
-Create New Concern
-      │
-      ▼
-Pending
-      │
-      ▼
-Admin Review
-      │
-      ▼
-Assign Worker
-      │
-      ▼
-Worker Completes Task
-      │
-      ▼
-Resolved
-```
-
----
-
-## 2. Collection Route Management
-
-Administrators create daily collection routes.
-
-Each route contains multiple collection points.
-
-Workers:
-
-- View assigned route.
-- Follow collection sequence.
-- Update collection status.
-- Report issues if collection fails.
-
----
-
-## 3. Collection Point Tracking
-
-Every collection point stores:
-
-- Location
-- Sequence Number
-- Status
-- Completion Time
-
-Possible Statuses:
-
-- Pending
-- Collected
-- Missed
-- Issue Reported
-
----
-
-## 4. Suggestion System
-
-Citizens can suggest improvements.
-
-Examples:
-
-- Install new public waste bin.
-- Create new collection point.
-- Improve waste collection.
-- Improve cleanliness.
-
-Suggestions are reviewed by administrators before approval.
-
----
-
-## 5. Waste Bin Management
-
-Administrators manage public waste bins.
-
-Each bin stores:
-
-- Capacity
-- Status
-- Ward
-- Location
-
-Possible Status:
-
-- Empty
-- Half Full
-- Full
-- Overflowing
-- Damaged
-
----
-
-## 6. Assignment Management
-
-Administrators assign reported concerns to workers.
-
-Assignment lifecycle:
-
-```text
-Assigned
-      │
-      ▼
-Accepted
-      │
-      ▼
-Completed
-```
-
-Workers upload a completion image before marking the assignment as completed.
-
----
-
-## 7. Notifications
-
-The system automatically generates notifications.
-
-### Citizens
-
-- Concern assigned
-- Concern resolved
-- Suggestion reviewed
-- Missed collection update
-
-### Workers
-
-- New assignment
-- Route assigned
-- Assignment completed
-
-### Administrators
-
-- New concern reported
-- New suggestion submitted
-- Assignment completed
-- Collection issue reported
-
----
-
-## 8. Dashboard
-
-### Citizen Dashboard
-
-- My Concerns
-- My Suggestions
-- Notifications
-- Concern Status
+### Daily Collection Routes & Interactive Navigation
+- Access daily assigned collection routes and ordered pickup stops.
+- Interactive map interface rendering scheduled collection stops with distinct collection-state markers.
+- Human-readable route stop labels (e.g., `"RouteName — Stop #X"`) paired with underlying coordinate preservation.
+- Turn-by-turn navigation redirect using Google Maps navigation integration.
+
+### Collection Point Execution
+- Mark stops as **Collected** in sequence upon physical waste clearance.
+- Report non-collection operational exceptions with categorized issue reasons:
+  - **House Locked**
+  - **Waste Not Ready**
+  - **Road Blocked**
+  - **Vehicle Issue**
+  - **Other**
+- Real-time map color synchronization indicating collected, pending, or blocked locations.
+
+### Assigned Citizen Concerns & Resolution Evidence
+- Dedicated **Assigned Citizen Concerns** work order view.
+- Accept and initiate assigned work orders (`Assigned` $\to$ `In Progress`).
+- Resolution proof pipeline:
+  - Workers capture or upload an on-site completion image before closing out tasks.
+  - Enforced backend RBAC ensures only the assigned worker or report creator can attach evidence images.
+  - Closing the work order automatically syncs the concern to `Resolved` and notifies municipal administrators.
 
 ### Worker Dashboard
-
-- Today's Route
-- Assigned Concerns
-- Notifications
-- Collection Progress
-
-### Admin Dashboard
-
-- User Statistics
-- Concern Statistics
-- Worker Performance
-- Collection Routes
-- Suggestions
-- Notifications
-- Waste Bin Overview
+- Active collection route summary and progress metrics.
+- Work order queue of assigned citizen concerns.
+- Operational notification alerts.
 
 ---
 
-## 9. Interactive Maps
+# 3. Administrator
 
-UrbanPulse uses openstreet Maps with role-based views.
+Administrators possess full operational oversight to triage reports, route trucks, dispatch personnel, and configure public assets.
 
+## Features
 
-### Citizen Map
+### Analytics & System Telemetry
+- Unified platform overview:
+  - Total users, active sanitation workers, and field trucks.
+  - Pending vs. resolved concerns ratio.
+  - Completed route counts and active collection metrics.
+- Real-time operational transparency telemetry and SLA resolution counters.
 
-- Report concern
-- Add suggestion pin
-- Track reported concerns
+### User Management
+- View and search user directory by name, email, or role (`Citizen`, `Worker`, `Admin`).
+- Create and provision new **Sanitation Worker** and **Administrator** accounts.
+- Update profile details and contact information.
+- Activate or deactivate user platform access.
+- Soft-delete decommissioned accounts.
 
-### Worker Map
+### Concern Management
+- View, search, and filter all citizen reports across categories and statuses (`Pending`, `In Progress`, `Resolved`).
+- Detail inspection modal displaying reporter metadata, description, coordinates, and photographic evidence.
+- Dual-image timeline: Displays original citizen report evidence alongside resolution proof photos uploaded by the completing sanitation worker.
+- Priority assignment (`Low`, `Medium`, `High`).
+- Worker dispatch: Assign concerns directly to active sanitation workers.
+- Add to Route: Draft concern coordinates directly into active route construction to streamline pickup during scheduled runs.
+- Direct manual status override to `Resolved`.
 
-- Assigned collection route
-- Collection points
-- Assigned concerns
+### Route & Collection Point Management
+- Create daily collection routes and dispatch specific sanitation workers.
+- Add collection points dynamically by providing latitude/longitude coordinates or dropping pins directly onto the interactive map.
+- Map representation of citizen suggestions and reported concerns for contextual route planning.
+- Manage, resequence, edit, or delete existing collection stops along active corridors.
 
-### Admin Map
+### Suggestion Management
+- Review community improvement proposals submitted by citizens.
+- Filter proposals by type (new bins, collection stops, cleaning requests).
+- Accept, reject, or mark suggestions under active municipal review.
+- Direct coordinate import: Convert approved suggestion coordinates directly into map points or collection stops.
 
-- All concerns
-- Collection routes
-- Waste bins
-- Collection points
-- Suggestions
-- Analytics overlays
-
----
-
-## 10. AI Chatbot
-
-UrbanPulse includes an AI-powered chatbot.
-
-### Capabilities
-
-- Waste segregation guidance.
-- Reporting assistance.
-- Platform navigation.
-- Frequently asked questions.
-- Municipality information.
-- Help users understand different concern categories.
-
-The chatbot is implemented as an independent FastAPI microservice using the Gemini API.
-
----
-
-# Non-Functional Features
-
-- JWT Authentication
-- Role-Based Access Control (RBAC)
-- PostgreSQL with PostGIS
-- FastAPI REST APIs
-- SQLAlchemy ORM
-- Alembic Database Migrations
-- Cloudinary Image Storage
-- Responsive React Frontend
-- Input Validation
-- Secure Password Hashing
-- API Documentation
-- Modular Architecture
-- Scalable Service Layer
-- Error Handling and Logging
+### Waste Bin Management
+- Manage public smart bins and street containers.
+- Register new waste bins with coordinate locations, capacity limits, and ward mapping.
+- Update and monitor bin operational statuses: `Empty`, `Half Full`, `Full`, `Overflowing`, `Damaged`.
+- Activate, deactivate, edit, or decommission public waste bin assets.
 
 ---
 
-# Future Enhancements
+# Core Workflows
 
-- Route optimization using shortest-path algorithms.
-- Predictive waste collection analytics.
-- IoT-enabled smart waste bins.
-- SMS and Email notifications.
-- Offline support for workers.
-- Mobile application.
-- AI-based waste image classification.
-- QR-code enabled waste bins.
+---
+
+## 1. Concern Lifecycle & Deduplication Workflow
+
+```text
+Citizen Reports Concern
+(Coordinates + Photo + Category)
+           │
+           ▼
+ Proximity Duplicate Check
+           │
+ ┌─────────┴─────────┐
+ │                   │
+ ▼                   ▼
+Duplicate Found?   No Match
+ │                   │
+ ▼                   ▼
+Prompt to Support   Create Concern Record
+Existing Concern    (Status: Pending)
+(Increment Upvote)   │
+                     ▼
+             Admin Triages Report
+                     │
+         ┌───────────┴───────────┐
+         │                       │
+         ▼                       ▼
+   Dispatch Worker         Import to Route
+   (Status: Assigned)      (Draft into Builder)
+         │
+         ▼
+   Worker Accepts Task
+   (Status: In Progress)
+         │
+         ▼
+   Worker Uploads Evidence Photo
+   & Completes Assignment
+         │
+         ▼
+   Concern Marked "Resolved"
+   (Admin Gallery Displays Worker Proof)
