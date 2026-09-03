@@ -21,7 +21,7 @@ export default function WorkerAssignmentsView({
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
   const handleStatusTransition = async (assignment, nextStatus) => {
-    if (nextStatus === "completed") {
+    if (nextStatus === "completed" || nextStatus === "resolved") {
       setCompletingAssignment(assignment);
       return;
     }
@@ -58,9 +58,11 @@ export default function WorkerAssignmentsView({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {assignments.map((item) => {
-            const status = String(item.status || "pending").toLowerCase();
-            const isCompleted = status === "completed" || status === "resolved";
-            const isAccepted = status === "accepted" || status === "in_progress";
+            const rawStatus = String(item.status || "pending").toLowerCase();
+            const isCompleted = rawStatus === "completed" || rawStatus === "resolved";
+            const isInProgress = rawStatus === "in_progress" || rawStatus === "accepted";
+            const isPendingOrAssigned =
+              rawStatus === "pending" || rawStatus === "assigned" || rawStatus === "open";
 
             return (
               <div
@@ -73,15 +75,15 @@ export default function WorkerAssignmentsView({
                       {item.title || `Concern Work Order #${item.id}`}
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                         isCompleted
                           ? "bg-emerald-100 text-emerald-700"
-                          : isAccepted
+                          : isInProgress
                           ? "bg-blue-100 text-blue-700"
                           : "bg-amber-100 text-amber-700"
                       }`}
                     >
-                      {item.status || "Pending"}
+                      {item.status || "Assigned"}
                     </span>
                   </div>
 
@@ -103,27 +105,30 @@ export default function WorkerAssignmentsView({
 
                   {!isCompleted && (
                     <div className="flex items-center gap-2">
-                      {status === "pending" && (
+                      {isPendingOrAssigned && (
                         <button
                           type="button"
                           disabled={actionLoadingId === item.id}
-                          onClick={() => handleStatusTransition(item, "accepted")}
-                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1 transition shadow-xs disabled:opacity-60"
+                          onClick={() => handleStatusTransition(item, "in_progress")}
+                          className="px-2.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-semibold flex items-center gap-1 transition"
                         >
-                          {actionLoadingId === item.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowRight className="w-3 h-3" />}
-                          Accept Task
+                          {actionLoadingId === item.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <ArrowRight className="w-3 h-3" />
+                          )}
+                          Start
                         </button>
                       )}
 
-                      {isAccepted && (
-                        <button
-                          type="button"
-                          onClick={() => handleStatusTransition(item, "completed")}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1 transition shadow-xs"
-                        >
-                          <Camera className="w-3 h-3" /> Resolve & Upload Proof
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleStatusTransition(item, "completed")}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-xs"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        Resolve & Upload Proof
+                      </button>
                     </div>
                   )}
 

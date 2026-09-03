@@ -59,16 +59,13 @@ export default function ConcernManagement({
   onImportToRoute,
   refreshAnalytics,
 }) {
-  // Concerns & Filtering States
   const [concerns, setConcerns] = useState([]);
   const [concernSearch, setConcernSearch] = useState("");
   const [concernStatusFilter, setConcernStatusFilter] = useState("All");
 
-  // Worker & Assignment States
   const [workersList, setWorkersList] = useState([]);
   const [assignItem, setAssignItem] = useState(null);
 
-  // Modal / Detail States
   const [viewConcern, setViewConcern] = useState(null);
   const [concernImages, setConcernImages] = useState([]);
   const [loadingImages, setLoadingImages] = useState(false);
@@ -106,7 +103,6 @@ export default function ConcernManagement({
     fetchWorkers();
   }, []);
 
-  // Safe Guard on Filter
   const filteredConcerns = useMemo(() => {
     const list = Array.isArray(concerns) ? concerns : [];
     return list.filter((c) => {
@@ -182,7 +178,7 @@ export default function ConcernManagement({
               Concerns Management
             </h1>
             <p className="text-sm text-gray-500">
-              Inspect citizen reports, dispatch workers, and manage resolution.
+              Inspect citizen reports, dispatch workers, and view proof of resolution.
             </p>
           </div>
         </div>
@@ -229,7 +225,9 @@ export default function ConcernManagement({
                 <th className="text-left font-semibold px-5 py-3">Reported Date</th>
                 <th className="text-left font-semibold px-5 py-3">Priority</th>
                 <th className="text-left font-semibold px-5 py-3">Status</th>
-                <th className="w-[360px] min-w-[360px] text-center font-semibold px-5 py-3">Actions</th>
+                <th className="w-[320px] min-w-[320px] text-center font-semibold px-5 py-3">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -270,18 +268,19 @@ export default function ConcernManagement({
                         {c.status || "Pending"}
                       </span>
                     </td>
-                    <td className="w-[360px] min-w-[360px] px-5 py-3.5 text-center whitespace-nowrap">
+                    <td className="w-[320px] min-w-[320px] px-5 py-3.5 text-center whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1.5">
-                        {/* 1. Details */}
+                        {/* 1. View Details (contains evidence photos) */}
                         <button
                           type="button"
                           onClick={() => openViewConcern(c)}
                           className="flex items-center gap-1 text-xs font-medium text-gray-700 border border-gray-200 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                          title="View Concern Details & Photos"
                         >
                           <Eye className="w-3.5 h-3.5" /> Details
                         </button>
 
-                        {/* 2. Assign to Worker */}
+                        {/* 2. Assign Worker */}
                         {!isResolved && (
                           <button
                             type="button"
@@ -410,12 +409,12 @@ export default function ConcernManagement({
 
             <div className="border-t border-gray-100 pt-3 mb-5">
               <h4 className="text-xs font-semibold text-gray-700 mb-2.5 flex items-center gap-1">
-                <ImageIcon className="w-4 h-4 text-amber-600" /> Evidence Images
+                <ImageIcon className="w-4 h-4 text-amber-600" /> Evidence Photos
               </h4>
               {loadingImages ? (
                 <p className="text-xs text-gray-400">Loading images...</p>
               ) : concernImages.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                   {concernImages.map((img, idx) => {
                     const imageUrl =
                       typeof img === "string"
@@ -426,7 +425,7 @@ export default function ConcernManagement({
                         key={img.id || idx}
                         src={imageUrl}
                         alt="Concern proof"
-                        className="w-full h-24 object-cover rounded-xl border border-gray-200"
+                        className="w-full h-28 object-cover rounded-xl border border-gray-200"
                         onError={(e) => {
                           e.target.onerror = null;
                           e.target.src =
@@ -449,7 +448,9 @@ export default function ConcernManagement({
                     onClick={() => {
                       const item = {
                         id: viewConcern.id,
-                        title: getCategoryLabel(viewConcern.category) || `Concern #${viewConcern.id}`,
+                        title:
+                          getCategoryLabel(viewConcern.category) ||
+                          `Concern #${viewConcern.id}`,
                         location: formatLocation(viewConcern.location),
                         type: "concern",
                       };
