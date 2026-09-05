@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Cookie,
     Depends,
     HTTPException,
@@ -14,8 +15,10 @@ from app.dependencies.auth import get_current_user
 from app.dependencies.database import get_db
 from app.models.user import User
 from app.schemas.auth import (
+    ForgotPasswordRequest,
     LoginRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     TokenResponse,
 )
 from app.schemas.user import UserResponse
@@ -25,6 +28,11 @@ from app.services.auth_services import (
     refresh_user_tokens,
     register_user,
     revoke_user_refresh_token,
+)
+from app.services.email_service import send_password_reset_email
+from app.services.password_reset_service import (
+    create_password_reset_token,
+    reset_user_password,
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -165,3 +173,40 @@ def get_me(
     current_user: User = Depends(get_current_user),
 ):
     return current_user
+
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+def forgot_password(
+    data: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    user, raw_token = create_password_reset_token(db, data.identifier)
+
+    # Return the exact same message to prevent user enumeration
+    if user and raw_token:
+        background_tasks.add_task(
+            send_password_reset_email,
+            to_email=user.email,
+            user_name=user.full_name,
+            raw_token=raw_token,
+        )
+
+    return {
+        "detail": "If an account matches that email or phone number, a password reset link has been sent."
+    }
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+def reset_password(
+    data: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    try:
+        reset_user_password(db, data.token, data.new_password)
+        return {"detail": "Password has been successfully reset."}
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(err),
+        )

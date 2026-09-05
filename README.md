@@ -1,133 +1,53 @@
-<<<<<<< HEAD
-# 🏙️ UrbanPulse — Smart Waste Management System
+# 🏙️ UrbanPulse — Smart Waste Management Platform
 
-UrbanPulse is a full-stack **Smart Waste Management System** designed to improve the reporting, monitoring, assignment, collection, and analysis of urban waste-management concerns.
-
-The platform connects **citizens, waste-collection workers, and administrators** through a centralized system with role-based access, geolocation, image evidence, collection-route management, waste-bin monitoring, dashboards, analytics, and an AI-powered chatbot.
+UrbanPulse is a full-stack, GIS-enabled smart municipal waste management ecosystem that coordinates **Citizens**, **Sanitation Workers**, and **Municipal Administrators** through automated workflows, spatial tracking, role-based controls, and AI-powered assistance.
 
 ---
 
-## 📌 Problem Statement
+## 📸 Interface Previews
 
-Traditional waste-management systems often depend on manual reporting and disconnected workflows. This can result in:
+### Landing Page & Live Impact
+![Home Page](/screenshots/HomePage.png)
 
-* Overflowing waste bins not being reported or monitored efficiently
-* Delayed handling of public waste concerns
-* Difficulty assigning concerns to collection workers
-* Poor visibility into collection routes and collection points
-* Lack of centralized analytics for administrators
-* Limited communication between citizens and municipal authorities
-* Difficulty locating nearby waste-management resources
+<p align="center">
+  <img src="screenshots/LiveMetrics.png" width="49%" alt="Live Metrics" />
+  <img src="screenshots/Features.png" width="49%" alt="Features Overview" />
+</p>
 
-UrbanPulse addresses these challenges by providing a centralized digital platform for **concern reporting, waste collection management, resource monitoring, communication, and analytics**.
+<p align="center">
+  <img src="screenshots/AboutUs.png" width="49%" alt="About Us" />
+  <img src="screenshots/ContactUs.png" width="49%" alt="Contact Us" />
+</p>
 
----
+### Citizen Experience
+<p align="center">
+  <img src="screenshots/CitizenDashhboard.png" width="49%" alt="Citizen Dashboard" />
+  <img src="screenshots/ReportConcernForm.png" width="49%" alt="Report Concern Modal" />
+</p>
+<p align="center">
+  <img src="screenshots/SuggestionSidebar.png" width="49%" alt="Citizen Suggestion Sidebar" />
+  <img src="screenshots/ProfilePage.png" width="49%" alt="Profile Page" />
+</p>
 
-# ✨ Key Features
+### Sanitation Worker Workspace
+<p align="center">
+  <img src="screenshots/WorkerDashboard.png" width="49%" alt="Worker Dashboard" />
+  <img src="screenshots/WorkerMap.png" width="49%" alt="Worker Route Map" />
+</p>
+<p align="center">
+  <img src="screenshots/WorkerAssignmentSection.png" width="85%" alt="Worker Assignments" />
+</p>
 
-## 👤 Citizen Features
+### Municipal Administrator Control Center
+![Admin Dashboard](screenshots/AdminDashboard.png)
 
-* User registration and login
-* JWT-based authentication
-* Profile management
-* Password management
-* Report waste-management concerns
-* Upload image evidence
-* Add geographical location to concerns
-* View submitted concerns
-* View concern details and history
-* Support existing concerns
-* View nearby:
-
-  * Waste bins
-  * Concerns
-  * Collection points
-* Receive notifications
-* Submit suggestions
-* View personal dashboard
-* Interact with the AI chatbot
-
----
-
-## 🚛 Worker Features
-
-* Secure worker authentication
-* Worker dashboard
-* View assigned work
-* View assignment details
-* Update assignment status
-* View collection routes
-* View assigned collection points
-* View nearby waste-management resources
-* Update waste-bin fill levels
-* Mark collection points as collected
-* Receive notifications
-
----
-
-## 🛠️ Administrator Features
-
-* Administrator authentication
-* User management
-* Activate/deactivate users
-* Create and manage workers
-* Concern management
-* Concern status management
-* Assignment management
-* Collection-route management
-* Collection-point management
-* Waste-bin management
-* Waste-bin activation/deactivation
-* Fill-level monitoring
-* Citizen suggestion management
-* Administrative dashboard
-* Analytics dashboard
-* Worker analytics
-* Concern analytics
-* Route analytics
-* Collection-point analytics
-* Waste-bin analytics
-
----
-
-# 🏗️ System Architecture
-
-UrbanPulse is organized into three major application layers:
-
-```text
-                         ┌─────────────────────┐
-                         │      Frontend       │
-                         │   React + Vite      │
-                         └──────────┬──────────┘
-                                    │
-                                    │ REST API
-                                    ▼
-                         ┌─────────────────────┐
-                         │       Backend       │
-                         │ FastAPI + SQLAlchemy│
-                         └───────┬─────┬───────┘
-                                 │     │
-                    ┌────────────┘     └─────────────┐
-                    ▼                                ▼
-          ┌──────────────────┐             ┌──────────────────┐
-          │   PostgreSQL     │             │    Cloudinary    │
-          │    Database      │             │ Image Storage    │
-          └──────────────────┘             └──────────────────┘
-
-                                 │
-                                 ▼
-                         ┌─────────────────────┐
-                         │      Chatbot        │
-                         │   OpenAI + RAG      │
-                         └─────────────────────┘
-=======
-# UrbanPulse
-
-### Smart Waste Management System
-
-UrbanPulse is a full-stack smart waste management ecosystem designed to streamline civic cleanliness by connecting **citizens, sanitation workers, and municipal administrators** through a unified digital platform.
-
-The system provides real-time civic issue reporting, GIS-based route and collection-point management, task dispatching, waste-bin monitoring, analytics, and an AI-powered civic support assistant.
+<p align="center">
+  <img src="screenshots/ConcernSection.png" width="49%" alt="Concern Management" />
+  <img src="screenshots/RouteSection.png" width="49%" alt="Route Management" />
+</p>
+<p align="center">
+  <img src="screenshots/WasteBinManagementSection.png" width="85%" alt="Waste Bin Management" />
+</p>
 
 ---
 
@@ -137,35 +57,67 @@ The system provides real-time civic issue reporting, GIS-based route and collect
 - [Core Features](#core-features)
   - [Citizen Portal](#1-citizen-portal)
   - [Sanitation Worker Portal](#2-sanitation-worker-portal)
-  - [Municipal Administrator Dashboard](#3-municipal-administrator-dashboard)
-  - [AI Assistant](#4-urbanpulse-ai-assistant)
-- [Architecture](#architecture)
+  - [Administrator Dashboard](#3-administrator-dashboard)
+  - [AI Assistant](#4-ai-assistant)
+- [System Architecture](#system-architecture)
 - [Technology Stack](#technology-stack)
 - [Repository Structure](#repository-structure)
+- [Core Workflows](#core-workflows)
+- [REST API](#rest-api)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
-- [REST API Reference](#rest-api-reference)
 - [Security](#security)
+- [Database](#database)
+- [Testing](#testing)
 - [Documentation](#documentation)
+- [Development Workflow](#development-workflow)
+- [Design Principles](#design-principles)
+- [Future Scope](#future-scope)
+- [Project Status](#project-status)
 - [License](#license)
 
 ---
 
 ## Overview
 
-UrbanPulse addresses common challenges in municipal waste management by providing a centralized platform for:
+UrbanPulse addresses common problems in municipal waste management, including:
 
-- Citizen complaint and concern reporting
-- Geotagged waste-management issues
-- Waste collection route management
-- Sanitation-worker task dispatching
-- Public waste-bin monitoring
-- Collection-point management
-- Civic suggestions and feedback
-- Municipal analytics
-- AI-powered civic assistance
+- Inefficient reporting of waste-related concerns
+- Delayed assignment and resolution of civic issues
+- Limited visibility into collection routes and collection points
+- Difficulty monitoring public waste bins
+- Fragmented communication between citizens and municipal authorities
+- Limited operational analytics
+- Lack of centralized location-aware waste-management information
 
-The platform follows a **role-based architecture**, providing different capabilities to citizens, sanitation workers, and administrators.
+The platform provides a role-based workflow:
+
+```text
+Citizens
+   │
+   ▼
+Issue Reporting / Suggestions
+   │
+   ▼
+Municipal Administration
+   │
+   ├── Triage & Prioritization
+   ├── Worker Assignment
+   └── Route Planning
+           │
+           ▼
+   Sanitation Workers
+           │
+           ├── Collection
+           ├── Concern Resolution
+           └── Evidence Upload
+           │
+           ▼
+        Resolution
+           │
+           ▼
+   Citizen Notifications
+```
 
 ---
 
@@ -173,328 +125,329 @@ The platform follows a **role-based architecture**, providing different capabili
 
 ## 1. Citizen Portal
 
-### Concern Management
+Citizens can report neighborhood waste problems, suggest municipal improvements, and track the progress of their submissions.
 
-Citizens can report waste-management issues directly through the platform.
+### Concern Reporting
 
-Features include:
+- Report geotagged waste-management concerns
+- Select issue categories:
+  - Illegal Dumping
+  - Overflowing Bin
+  - Missed Pickup
+  - Damaged Bin
+- Select a location using an interactive map or browser geolocation
+- Upload supporting photo evidence
+- Track concern status and resolution history
+- Edit or delete concerns while they are pending
+- Support existing nearby concerns
 
-- Report geotagged concerns
-- Select detailed concern categories:
-  - Overflowing bins
-  - Missed collections
-  - Illegal dumping
-  - Broken bins
-  - Other civic cleanliness issues
-- Upload photo evidence
-- Track concern status throughout its lifecycle
-- Edit or delete pending concerns
+### Duplicate Detection
+
+UrbanPulse performs proximity-based duplicate checking for active concerns.
+
+```text
+Citizen submits concern
+        │
+        ▼
+Proximity + category check
+        │
+   ┌────┴────┐
+   │         │
+Duplicate   New
+   │         │
+   ▼         ▼
+Support     Create
+existing    concern
+concern     (Pending)
+```
+
+This reduces duplicate reports and allows citizens to increase community support for an existing issue.
 
 ### Concern Lifecycle
 
-Reports can move through the following stages:
-
 ```text
-Open → Pending → Assigned → Resolved → Closed
+Pending → In Progress → Resolved
 ```
 
-Citizens can monitor the progress of their reports from their personal dashboard.
+### Suggestions
 
-### Collection Points & Missed Pickups
-
-Citizens can:
-
-- Pin new suggested collection points using an interactive map
-- Report missed door-to-door waste collections
-- Track the status of submitted reports
-
-### Suggestions & Civic Engagement
-
-Citizens can submit suggestions related to:
+Citizens can submit suggestions for:
 
 - New public waste bins
-- Collection points
+- New recurring collection points
 - Waste-management infrastructure
-- Other civic improvements
+- General civic improvements
 
-They can also:
+Suggestion statuses include:
 
-- Track suggestion review status
-- View administrative responses
-- Receive feedback from municipal authorities
+```text
+Pending → Under Review → Approved / Rejected
+```
 
-### Notifications & Personal Dashboard
+### Notifications & Dashboard
 
 The citizen dashboard provides:
 
-- Concern notifications
-- Assignment updates
-- Resolution updates
-- Suggestion feedback
 - Total reported concerns
 - Pending concerns
 - Resolved concerns
+- Personal concern history
 - Suggestion history
+- Notification inbox
+- Assignment and resolution updates
+- Suggestion review feedback
 
 ---
 
 ## 2. Sanitation Worker Portal
 
-The sanitation-worker portal helps field staff manage daily collection operations and assigned civic tasks.
+The worker portal supports daily collection operations and resolution of assigned citizen concerns.
 
 ### Daily Route Management
 
 Workers can:
 
-- View assigned daily collection routes
-- Follow sequenced collection stops
-- View routes through an interactive map
-- Follow optimized collection sequences
+- View assigned collection routes
+- View ordered collection stops
+- Navigate routes through an interactive map
+- Monitor route execution progress
+- Use Google Maps navigation for individual locations
 
 ### Collection Point Execution
 
-Workers can mark individual collection points as:
+Workers can:
 
-**Collected**
+- Mark collection points as collected
+- Report unsuccessful collection attempts
+- Record operational failure reasons:
+  - House Locked
+  - Waste Not Ready
+  - Road Blocked
+  - Vehicle Issue
+  - Other
 
-If a collection cannot be completed, workers can report a specific failure reason:
+Collection-state changes are reflected in the route map.
 
-- House Locked
-- Waste Not Ready
-- Road Blocked
-- Vehicle Issue
-- Other
-
-### Concern Assignments
+### Citizen Concern Assignments
 
 Workers can:
 
 - View assigned concerns
-- Accept assignments
-- Execute field tasks
-- Mark tasks as completed
-- Upload photo verification from the field
+- Accept assigned work orders
+- Move assignments from `Assigned` to `In Progress`
+- Complete field work
+- Upload resolution evidence
+- Mark assigned work as completed
+
+Resolution evidence is used to maintain an auditable record of the work performed.
 
 ### Worker Dashboard
 
-Workers can monitor:
+The worker dashboard provides:
 
-- Daily progress
+- Daily route summary
+- Collection progress
 - Pending assignments
-- Completed tasks
+- Completed assignments
 - Notifications
-- Route execution status
+- Operational status
 
 ---
 
-## 3. Municipal Administrator Dashboard
+## 3. Administrator Dashboard
 
-The administrator dashboard provides centralized control over municipal waste-management operations.
+Administrators have centralized control over users, concerns, workers, routes, collection points, waste bins, suggestions, and analytics.
 
 ### User & Staff Management
 
 Administrators can:
 
-- Manage citizens
-- Manage sanitation workers
-- Verify accounts
-- Create worker accounts
-- Activate or deactivate users
-- Update user status
+- View and search users
+- Filter users by role
+- Create worker and administrator accounts
+- Update user details
+- Activate or deactivate accounts
+- Soft-delete decommissioned accounts
 
-### Concern Triage & Assignment
+### Concern Management
 
 Administrators can:
 
-- Monitor city-wide concerns
-- Review reported issues
-- Assign priority levels
-- Assign field workers
+- View and filter city-wide concerns
+- Inspect reporter information and evidence
+- Review concern locations
+- Assign priorities
+- Assign workers
 - Reject invalid reports
+- Add concern coordinates to route planning
+- Override concern status when necessary
 
-Supported priority levels:
+Supported priorities:
 
 ```text
 Low
 Medium
 High
-Critical
 ```
 
-### Route & Collection Point Dispatch
+Supported concern statuses:
+
+```text
+Pending
+In Progress
+Resolved
+```
+
+### Route & Collection Point Management
 
 Administrators can:
 
 - Create collection routes
-- Edit routes
-- Delete routes
-- Reorder collection points
-- Add collection points to routes
-- Remove collection points from routes
-- Link collection points with public waste bins
+- Assign routes to workers
+- Add collection points
+- Edit collection points
+- Delete collection points
+- Reorder collection stops
+- Add coordinates through an interactive map
+- Use concerns and suggestions as contextual planning data
 
-### Waste Bin Monitoring
+### Waste Bin Management
 
 Administrators can:
 
-- Deploy new public waste bins
-- Update bin locations
+- Register public waste bins
+- Set bin coordinates and capacity information
 - Monitor fill levels
-- Activate/deactivate bins
-- Track waste-bin status
+- Update bin metadata
+- Activate or deactivate bins
+- Monitor operational status
+
+Supported operational states include:
+
+```text
+Empty
+Half Full
+Full
+Overflowing
+Damaged
+```
 
 ### Suggestion Management
 
 Administrators can:
 
 - Review citizen suggestions
-- Approve suggestions
-- Reject suggestions
-- Send direct feedback to citizens
+- Filter suggestions by type
+- Approve or reject suggestions
+- Mark suggestions under review
+- Provide administrative feedback
+- Convert approved coordinates into collection points or route-planning data
 
-### Analytics Dashboard
+### Analytics
 
-Municipal analytics include:
+The administrator dashboard provides operational analytics for:
 
-- Total users
-- Active workers
-- Total concerns
-- Pending concerns
-- Resolved concerns
-- Route completion rates
-- Ward-level statistics
+- Users
+- Workers
+- Concerns
+- Concern categories
+- Concern priorities
+- Routes
+- Collection points
+- Waste bins
+- Resolution performance
+- Public operational impact
 
 ---
 
-## 4. UrbanPulse AI Assistant
+## 4. AI Assistant
 
-UrbanPulse includes an AI-powered **Retrieval-Augmented Generation (RAG)** assistant designed to provide context-aware civic support.
+UrbanPulse includes an AI-powered **Retrieval-Augmented Generation (RAG)** assistant for civic and waste-management support.
 
-The assistant can help users with:
+The assistant can answer questions about:
 
-- Municipal guidelines
-- Waste-management instructions
-- Concern-reporting procedures
-- Platform navigation
-- Civic information
+- Waste-management guidelines
+- Concern reporting
+- Platform usage
+- Civic procedures
+- Municipal waste-management information
 
-### AI Architecture
-
-The chatbot uses:
-
-- Python
-- ChromaDB
-- Sentence Transformers
-- Custom civic knowledge embeddings
-- Retrieval-Augmented Generation pipeline
-
-High-level flow:
+### RAG Architecture
 
 ```text
 User Query
-    ↓
+    │
+    ▼
 Query Processing
-    ↓
+    │
+    ▼
 Embedding Generation
-    ↓
+    │
+    ▼
 ChromaDB Retrieval
-    ↓
-Relevant Civic Knowledge
-    ↓
-RAG Pipeline
-    ↓
+    │
+    ▼
+Relevant Knowledge
+    │
+    ▼
+Context Construction
+    │
+    ▼
+OpenAI Model
+    │
+    ▼
 AI Response
->>>>>>> second
 ```
 
----
+The chatbot service contains:
 
-<<<<<<< HEAD
-# 🧰 Technology Stack
-
-## Frontend
-
-* React
-* Vite
-* JavaScript / JSX
-* Axios
-* React Router
-* Recharts
-* Geolocation APIs
-* Responsive UI
-
-## Backend
-
-* Python
-* FastAPI
-* SQLAlchemy
-* PostgreSQL
-* Alembic
-* Pydantic
-* JWT authentication
-* Role-based access control
-
-## Image Management
-
-* Cloudinary
-* Multipart file uploads
-* Image validation
-* Configurable upload limits
-
-## AI Chatbot
-
-* Python
-* FastAPI
-* OpenAI
-* Retrieval-Augmented Generation (RAG)
-* ChromaDB
-* Embeddings
-* Knowledge-document ingestion
-* Municipal waste-management knowledge base
-
-## Development Tools
-
-* Git
-* GitHub
-* VS Code
-* Swagger / OpenAPI
-* Postman
-* Python virtual environment
-* npm
+- Knowledge-document ingestion
+- Text splitting
+- Embedding generation
+- Vector storage
+- Retrieval
+- Context construction
+- Prompt management
+- LLM provider integration
+- API endpoints
+- RAG tests
 
 ---
 
-# 📂 Repository Structure
-=======
-# Architecture
+# System Architecture
 
-UrbanPulse follows a modular full-stack architecture consisting of three primary services and a documentation layer.
+UrbanPulse consists of a React frontend, FastAPI backend, PostgreSQL database, image-storage integration, and a separate RAG chatbot service.
 
 ```text
-                    ┌─────────────────────┐
-                    │      Citizens       │
-                    └──────────┬──────────┘
+                         ┌──────────────────────┐
+                         │       Citizens       │
+                         └──────────┬───────────┘
+                                    │
+                         ┌──────────▼───────────┐
+                         │    React Frontend    │
+                         │   React + Vite + GIS │
+                         └──────────┬───────────┘
+                                    │ REST API
+                         ┌──────────▼───────────┐
+                         │    FastAPI Backend    │
+                         │ Authentication / RBAC │
+                         │    Business Logic     │
+                         └───────┬───────┬──────┘
+                                 │       │
+                    ┌────────────▼───┐ ┌─▼────────────────┐
+                    │   PostgreSQL   │ │  Chatbot / RAG   │
+                    │    Database    │ │     Service      │
+                    └────────────────┘ └────────┬─────────┘
+                                                │
+                                         ┌──────▼──────┐
+                                         │   ChromaDB  │
+                                         │ Vector Store│
+                                         └─────────────┘
+
+                         Image Evidence
                                │
-                    ┌──────────▼──────────┐
-                    │   React Frontend    │
-                    │ React + Vite + GIS  │
-                    └──────────┬──────────┘
-                               │ REST API
-                    ┌──────────▼──────────┐
-                    │   FastAPI Backend   │
-                    │ Authentication/RBAC │
-                    │ Business Logic      │
-                    └───────┬───────┬─────┘
-                            │       │
-                 ┌──────────▼───┐ ┌─▼─────────────┐
-                 │ PostgreSQL   │ │ Chatbot / RAG │
-                 │   Database   │ │   Service     │
-                 └──────────────┘ └───────┬───────┘
-                                           │
-                                    ┌──────▼──────┐
-                                    │  ChromaDB   │
-                                    │ Vector Store│
-                                    └─────────────┘
+                               ▼
+                          Cloudinary
 ```
 
 ---
@@ -507,11 +460,16 @@ UrbanPulse follows a modular full-stack architecture consisting of three primary
 |---|---|
 | React 18 | User interface |
 | Vite | Frontend build tooling |
+| JavaScript / JSX | Application development |
 | Tailwind CSS | Styling |
 | Framer Motion | Animations |
 | Lucide React | Icons |
+| React Router | Client-side routing |
+| Axios | HTTP requests |
 | React-Leaflet | Interactive maps |
 | Leaflet | GIS/map rendering |
+| Recharts | Data visualization |
+| Browser Geolocation API | Location access |
 
 ## Backend
 
@@ -521,36 +479,47 @@ UrbanPulse follows a modular full-stack architecture consisting of three primary
 | FastAPI | REST API framework |
 | SQLAlchemy | ORM |
 | Pydantic v2 | Data validation |
-| Alembic | Database migrations |
 | PostgreSQL | Relational database |
+| Alembic | Database migrations |
+| JWT | Authentication |
+| bcrypt | Password hashing |
 
 ## AI / Chatbot
 
 | Technology | Purpose |
 |---|---|
 | Python | AI service |
+| OpenAI | Language-model provider |
 | ChromaDB | Vector database |
-| Sentence Transformers | Text embeddings |
-| RAG Pipeline | Context-aware responses |
+| Sentence Transformers | Embeddings |
+| RAG | Context-aware retrieval and generation |
 
-## Security
+## Image Storage
 
 | Technology | Purpose |
 |---|---|
-| JWT | Authentication |
-| RBAC | Role-based access control |
-| bcrypt | Password hashing |
+| Cloudinary | Concern evidence storage |
+| Multipart uploads | Image transfer |
+| Image validation | Upload protection |
+
+## Development Tools
+
+- Git
+- GitHub
+- VS Code
+- Swagger / OpenAPI
+- Postman
+- Python virtual environments
+- npm
 
 ---
 
 # Repository Structure
->>>>>>> second
 
 ```text
 Urban-Pulse/
 │
 ├── urbanpulse-backend/
-<<<<<<< HEAD
 │   ├── app/
 │   │   ├── api/
 │   │   │   └── v1/
@@ -569,7 +538,6 @@ Urban-Pulse/
 │   │   │       ├── suggestions.py
 │   │   │       ├── user.py
 │   │   │       └── waste_bins.py
-│   │   │
 │   │   ├── core/
 │   │   ├── db/
 │   │   ├── dependencies/
@@ -583,7 +551,6 @@ Urban-Pulse/
 │   │   ├── static/
 │   │   ├── utils/
 │   │   └── main.py
-│   │
 │   ├── alembic/
 │   ├── tests/
 │   ├── requirements.txt
@@ -594,12 +561,16 @@ Urban-Pulse/
 │   │   ├── api/
 │   │   ├── assets/
 │   │   ├── components/
+│   │   │   ├── admin/
+│   │   │   ├── common/
+│   │   │   ├── report-concern/
+│   │   │   └── worker/
 │   │   ├── pages/
 │   │   ├── App.jsx
 │   │   ├── main.jsx
 │   │   └── index.css
-│   ├── package.json
-│   └── ...
+│   ├── tailwind.config.js
+│   └── package.json
 │
 ├── urbanpulse-chatbot/
 │   ├── app/
@@ -620,106 +591,38 @@ Urban-Pulse/
 │   ├── scripts/
 │   ├── tests/
 │   ├── requirements.txt
+│   ├── test_chromadb.py
+│   ├── test_rag_service.py
 │   └── README.md
 │
 ├── urbanpulse-docs/
-│   ├── features.md
 │   ├── api.md
 │   ├── database_models.md
-│   └── project_structure.md
+│   ├── features.md
+│   ├── project_structure.md
+│   ├── SRS.pdf
+│   ├── urban_pulse_erd.png
+│   └── urban_pulse_physical_erd.jpeg
 │
 ├── README.md
 └── .gitignore
-=======
-│   ├── alembic/                    # Database migrations
-│   │
-│   ├── app/
-│   │   ├── api/v1/                 # REST API endpoints
-│   │   │   ├── auth
-│   │   │   ├── concerns
-│   │   │   ├── routes
-│   │   │   ├── points
-│   │   │   ├── bins
-│   │   │   └── analytics
-│   │   │
-│   │   ├── core/                   # Configuration and security
-│   │   ├── db/                     # Database engine/session
-│   │   ├── dependencies/           # Authentication dependencies
-│   │   ├── middleware/             # CORS and request middleware
-│   │   ├── models/                 # SQLAlchemy models
-│   │   ├── schemas/                # Pydantic schemas
-│   │   ├── scripts/                # Database initialization/seeding
-│   │   ├── services/               # Business logic
-│   │   └── utils/                  # Helper utilities
-│   │
-│   ├── alembic.ini
-│   ├── main.py                     # FastAPI entrypoint
-│   └── requirements.txt
-│
-├── urbanpulse-frontend/
-│   ├── src/
-│   │   ├── api/                    # API service modules
-│   │   ├── assets/                 # Static assets
-│   │   │
-│   │   ├── components/
-│   │   │   ├── admin/              # Admin components
-│   │   │   ├── common/             # Shared components
-│   │   │   ├── report-concern/     # Concern reporting
-│   │   │   ├── worker/             # Worker components
-│   │   │   ├── AboutUs.jsx
-│   │   │   ├── ContactUs.jsx
-│   │   │   ├── Features.jsx
-│   │   │   ├── FloatingChatbot.jsx
-│   │   │   ├── Hero.jsx
-│   │   │   ├── Navbar.jsx
-│   │   │   └── NotificationDropdown.jsx
-│   │   │
-│   │   ├── pages/                  # Application pages
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   │
-│   ├── tailwind.config.js
-│   └── package.json
-│
-├── urbanpulse-chatbot/
-│   ├── app/                        # Chatbot API and processors
-│   ├── data/                       # Knowledge base and embeddings
-│   ├── tests/                      # RAG/ChromaDB tests
-│   ├── requirements.txt
-│   ├── test_chromadb.py
-│   └── test_rag_service.py
-│
-└── urbanpulse-docs/
-    ├── api.md                      # API documentation
-    ├── database_models.md          # Database documentation
-    ├── features.md                 # Feature specifications
-    ├── project_structure.md        # Architecture documentation
-    ├── SRS.pdf                     # Software Requirements Specification
-    ├── urban_pulse_erd.png         # ER diagram
-    └── urban_pulse_physical_erd.jpeg
->>>>>>> second
 ```
 
 ---
 
-<<<<<<< HEAD
-# 🔄 Core System Workflow
+# Core Workflows
 
-## Concern Reporting
+## Concern Reporting & Resolution
 
 ```text
 Citizen
    │
    ▼
 Submit Concern
-   │
-   ├── Category
-   ├── Description
-   ├── Location
-   └── Image Evidence
+(Category + Description + Location + Evidence)
    │
    ▼
-Duplicate Check
+Duplicate Detection
    │
    ├── Duplicate → Support Existing Concern
    │
@@ -729,623 +632,307 @@ Duplicate Check
        Pending
           │
           ▼
-     Admin Review
+    Admin Review
           │
           ▼
-     Worker Assignment
+   Worker Assignment
           │
           ▼
-     Worker Handles Issue
+    In Progress
           │
           ▼
-        Resolved
+ Worker Resolves Issue
+ + Uploads Evidence
+          │
+          ▼
+       Resolved
+          │
+          ▼
+ Citizen / Admin Notification
 ```
 
-The backend performs duplicate checking for concerns based on nearby existing concerns.
-
----
-
-# 🚛 Collection Management
-
-Administrators can create and manage collection routes and collection points.
+## Collection Workflow
 
 ```text
-Collection Route
-       │
-       ├── Collection Point 1
-       ├── Collection Point 2
-       ├── Collection Point 3
-       └── Collection Point N
+Admin
+ │
+ ├── Creates Route
+ ├── Adds Collection Points
+ └── Assigns Worker
+        │
+        ▼
+     Worker
+        │
+        ├── Views Route
+        ├── Navigates to Stop
+        ├── Marks Collected
+        └── Reports Exception
 ```
 
-Workers can access routes and collection points assigned to them and update collection progress.
-
----
-
-# 🗑️ Waste Bin Management
-
-Administrators can create and manage waste bins.
-
-The system supports:
-
-* Bin creation
-* Bin listing
-* Individual bin details
-* Fill-level updates
-* Activation
-* Deactivation
-* Nearby-bin discovery
-
-Fill levels can be updated by authorized administrators and workers.
-
----
-
-# 📍 Location & Maps
-
-UrbanPulse provides location-based APIs for discovering nearby resources.
-
-Supported nearby-resource searches include:
-
-* Nearby waste bins
-* Nearby concerns
-* Nearby collection points
-
-Requests use geographical coordinates and a search radius.
-
----
-
-# 🤖 AI Chatbot
-
-UrbanPulse includes an AI-powered waste-management chatbot.
-
-The chatbot provides a conversational interface for waste-management-related questions.
-
-### Chatbot Architecture
+## Waste Bin Workflow
 
 ```text
-User Question
-      │
-      ▼
-Chatbot API
-      │
-      ▼
-Question Processing
-      │
-      ▼
-RAG Retrieval
-      │
-      ├── Knowledge Documents
-      │
-      └── Vector Store
-      │
-      ▼
-Relevant Context
-      │
-      ▼
-OpenAI Model
-      │
-      ▼
-Chatbot Response
+Admin Registers Bin
+        │
+        ▼
+Location + Capacity + Status
+        │
+        ▼
+Fill Level Updates
+(Admin / Worker / IoT integration)
+        │
+        ▼
+Monitoring & Analytics
 ```
 
-The chatbot application contains:
-
-* Document loading
-* Text splitting
-* Embedding generation
-* Vector storage
-* Retrieval
-* Context building
-* Prompt management
-* LLM provider integration
-
-The current chatbot configuration uses **OpenAI** and ChromaDB-based retrieval.
-
 ---
 
-# 🔐 Authentication & Security
+# REST API
 
-UrbanPulse uses several security mechanisms.
-
-## Authentication
-
-* JWT access tokens
-* Refresh-token mechanism
-* HTTP-only refresh-token cookie
-* Token rotation
-* Logout / token revocation
-
-## Authorization
-
-Role-based access control is implemented for:
-
-* Citizen
-* Worker
-* Admin
-
-Protected endpoints verify the authenticated user's role before allowing restricted operations.
-
-## Password Security
-
-Passwords are securely hashed rather than stored as plain text.
-
-## Image Security
-
-Uploaded images are:
-
-* Validated
-* Size-limited
-* Stored using Cloudinary
-* Associated with individual concerns
-
-The default maximum image size configured by the backend is **5 MB**.
-
----
-
-# 🌐 REST API
-
-The backend exposes its versioned API under:
+The backend exposes a versioned REST API under:
 
 ```text
 /api/v1
 ```
 
-The following list reflects the **currently implemented backend routes**.
+The current API is documented in [`urbanpulse-docs/api.md`](urbanpulse-docs/api.md).
 
-## Authentication
+## API Overview
 
-| Method | Endpoint                | Access         |
-| ------ | ----------------------- | -------------- |
-| POST   | `/api/v1/auth/register` | Public         |
-| POST   | `/api/v1/auth/login`    | Public         |
-| POST   | `/api/v1/auth/refresh`  | Refresh cookie |
-| POST   | `/api/v1/auth/logout`   | Public         |
-| GET    | `/api/v1/auth/me`       | Authenticated  |
+| Resource | Main Operations |
+|---|---|
+| Authentication | Register, login, refresh, logout, current user |
+| Users | Create, list, update, activate/deactivate, delete |
+| Profile | View and update profile/password |
+| Concerns | Create, list, update, delete, status, history, support |
+| Concern Images | Upload, list, delete evidence |
+| Assignments | Create, list, view, update status |
+| Collection Routes | Create, list, view, update, delete, status |
+| Collection Points | Create, list, view, update, delete, collect |
+| Waste Bins | Create, list, view, update, fill level, activation |
+| Suggestions | Citizen submission and admin review |
+| Notifications | List and read notifications |
+| Dashboards | Citizen, worker, and admin dashboards |
+| Analytics | Operational and performance metrics |
+| Maps | Nearby bins, concerns, and collection points |
+| Chatbot | AI/RAG query endpoint |
 
----
+## Important Endpoints
 
-## User Management
-
-| Method | Endpoint                               | Access |
-| ------ | -------------------------------------- | ------ |
-| GET    | `/api/v1/admin/users`                  | Admin  |
-| GET    | `/api/v1/admin/users/{user_id}`        | Admin  |
-| POST   | `/api/v1/admin/users`                  | Admin  |
-| PATCH  | `/api/v1/admin/users/{user_id}`        | Admin  |
-| PATCH  | `/api/v1/admin/users/{user_id}/status` | Admin  |
-| DELETE | `/api/v1/admin/users/{user_id}`        | Admin  |
-
----
-
-## Profile
-
-| Method | Endpoint                   | Access        |
-| ------ | -------------------------- | ------------- |
-| GET    | `/api/v1/profile`          | Authenticated |
-| PATCH  | `/api/v1/profile`          | Authenticated |
-| PATCH  | `/api/v1/profile/password` | Authenticated |
-
----
-
-## Notifications
-
-| Method | Endpoint                                       | Access        |
-| ------ | ---------------------------------------------- | ------------- |
-| GET    | `/api/v1/notifications`                        | Authenticated |
-| PATCH  | `/api/v1/notifications/read-all`               | Authenticated |
-| PATCH  | `/api/v1/notifications/{notification_id}/read` | Authenticated |
-
----
-
-## Concerns
-
-| Method | Endpoint                                | Access         |
-| ------ | --------------------------------------- | -------------- |
-| GET    | `/api/v1/concerns/health`               | Public         |
-| GET    | `/api/v1/concerns/db-health`            | Public         |
-| POST   | `/api/v1/concerns/`                     | Authenticated  |
-| GET    | `/api/v1/concerns/`                     | Authenticated  |
-| GET    | `/api/v1/concerns/{concern_id}`         | Authenticated  |
-| PUT    | `/api/v1/concerns/{concern_id}`         | Authenticated  |
-| DELETE | `/api/v1/concerns/{concern_id}`         | Authenticated  |
-| PATCH  | `/api/v1/concerns/{concern_id}/status`  | Admin / Worker |
-| GET    | `/api/v1/concerns/{concern_id}/history` | Authenticated  |
-| POST   | `/api/v1/concerns/{concern_id}/support` | Authenticated  |
-| DELETE | `/api/v1/concerns/{concern_id}/support` | Authenticated  |
-| GET    | `/api/v1/concerns/{concern_id}/support` | Authenticated  |
-
----
-
-## Concern Images
-
-| Method | Endpoint                                          | Access                |
-| ------ | ------------------------------------------------- | --------------------- |
-| POST   | `/api/v1/concerns/{concern_id}/images`            | Authenticated / Owner |
-| GET    | `/api/v1/concerns/{concern_id}/images`            | Authenticated         |
-| DELETE | `/api/v1/concerns/{concern_id}/images/{image_id}` | Authenticated / Owner |
-
----
-
-## Assignments
-
-| Method | Endpoint                                     | Access                  |
-| ------ | -------------------------------------------- | ----------------------- |
-| POST   | `/api/v1/assignments`                        | Admin                   |
-| GET    | `/api/v1/assignments`                        | Admin / Worker          |
-| GET    | `/api/v1/assignments/{assignment_id}`        | Admin / Assigned Worker |
-| PATCH  | `/api/v1/assignments/{assignment_id}/status` | Assigned Worker         |
-
----
-
-## Collection Routes
-
-| Method | Endpoint                                      | Access                  |
-| ------ | --------------------------------------------- | ----------------------- |
-| POST   | `/api/v1/collection-routes`                   | Admin                   |
-| GET    | `/api/v1/collection-routes`                   | Admin / Worker          |
-| GET    | `/api/v1/collection-routes/{route_id}`        | Admin / Assigned Worker |
-| PATCH  | `/api/v1/collection-routes/{route_id}`        | Admin                   |
-| PATCH  | `/api/v1/collection-routes/{route_id}/status` | Admin                   |
-| DELETE | `/api/v1/collection-routes/{route_id}`        | Admin                   |
-
----
-
-## Collection Points
-
-| Method | Endpoint                                       | Access                  |
-| ------ | ---------------------------------------------- | ----------------------- |
-| POST   | `/api/v1/collection-points`                    | Admin                   |
-| GET    | `/api/v1/collection-points`                    | Admin / Worker          |
-| GET    | `/api/v1/collection-points/route/{route_id}`   | Admin / Assigned Worker |
-| GET    | `/api/v1/collection-points/{point_id}`         | Admin / Assigned Worker |
-| PATCH  | `/api/v1/collection-points/{point_id}`         | Admin                   |
-| PATCH  | `/api/v1/collection-points/{point_id}/collect` | Worker                  |
-| DELETE | `/api/v1/collection-points/{point_id}`         | Admin                   |
-
----
-
-## Waste Bins
-
-| Method | Endpoint                                       | Access         |
-| ------ | ---------------------------------------------- | -------------- |
-| POST   | `/api/v1/waste-bins`                           | Admin          |
-| GET    | `/api/v1/waste-bins`                           | Admin / Worker |
-| GET    | `/api/v1/waste-bins/{waste_bin_id}`            | Admin / Worker |
-| PATCH  | `/api/v1/waste-bins/{waste_bin_id}`            | Admin          |
-| PATCH  | `/api/v1/waste-bins/{waste_bin_id}/fill-level` | Admin / Worker |
-| PATCH  | `/api/v1/waste-bins/{waste_bin_id}/activate`   | Admin          |
-| PATCH  | `/api/v1/waste-bins/{waste_bin_id}/deactivate` | Admin          |
-
----
-
-## Suggestions
-
-### Citizen
-
-| Method | Endpoint                      | Access  |
-| ------ | ----------------------------- | ------- |
-| POST   | `/api/v1/citizen/suggestions` | Citizen |
-| GET    | `/api/v1/citizen/suggestions` | Citizen |
-
-### Admin
-
-| Method | Endpoint                                    | Access |
-| ------ | ------------------------------------------- | ------ |
-| GET    | `/api/v1/admin/suggestions`                 | Admin  |
-| GET    | `/api/v1/admin/suggestions/{suggestion_id}` | Admin  |
-| PATCH  | `/api/v1/admin/suggestions/{suggestion_id}` | Admin  |
-
----
-
-## Dashboards
-
-| Method | Endpoint                    | Access  |
-| ------ | --------------------------- | ------- |
-| GET    | `/api/v1/dashboard/admin`   | Admin   |
-| GET    | `/api/v1/dashboard/worker`  | Worker  |
-| GET    | `/api/v1/dashboard/citizen` | Citizen |
-
----
-
-## Analytics
-
-All analytics endpoints are restricted to administrators.
-
-| Method | Endpoint                                     |
-| ------ | -------------------------------------------- |
-| GET    | `/api/v1/analytics/overview`                 |
-| GET    | `/api/v1/analytics/workers`                  |
-| GET    | `/api/v1/analytics/concerns/status`          |
-| GET    | `/api/v1/analytics/concerns/categories`      |
-| GET    | `/api/v1/analytics/concerns/priorities`      |
-| GET    | `/api/v1/analytics/routes/status`            |
-| GET    | `/api/v1/analytics/collection-points/status` |
-| GET    | `/api/v1/analytics/waste-bins/status`        |
-
----
-
-## Maps
-
-| Method | Endpoint                                | Access        |
-| ------ | --------------------------------------- | ------------- |
-| GET    | `/api/v1/maps/nearby-bins`              | Authenticated |
-| GET    | `/api/v1/maps/nearby-concerns`          | Authenticated |
-| GET    | `/api/v1/maps/nearby-collection-points` | Authenticated |
-
----
-
-## Chatbot
-
-| Method | Endpoint              | Access |
-| ------ | --------------------- | ------ |
-| POST   | `/api/v1/chatbot/ask` | Public |
-
----
-
-## API Root
-
-| Method | Endpoint | Access |
-| ------ | -------- | ------ |
-| GET    | `/`      | Public |
-
-Returns:
-
-```json
-{
-  "message": "UrbanPulse API is running"
-}
-```
-
-### API Count
-
-The current backend exposes:
-
-* **76 versioned `/api/v1` endpoints**
-* **1 root endpoint**
-* **77 total registered application endpoints**
-
----
-
-# 📖 Interactive API Documentation
-
-When the FastAPI backend is running, its automatically generated API documentation can be accessed through the standard FastAPI documentation endpoints:
+### Authentication
 
 ```text
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
+GET  /api/v1/auth/me
+```
+
+### Concerns
+
+```text
+GET    /api/v1/concerns/
+POST   /api/v1/concerns/
+GET    /api/v1/concerns/{concern_id}
+PUT    /api/v1/concerns/{concern_id}
+DELETE /api/v1/concerns/{concern_id}
+PATCH  /api/v1/concerns/{concern_id}/status
+GET    /api/v1/concerns/{concern_id}/history
+POST   /api/v1/concerns/{concern_id}/support
+DELETE /api/v1/concerns/{concern_id}/support
+```
+
+### Assignments
+
+```text
+GET   /api/v1/assignments
+POST  /api/v1/assignments
+GET   /api/v1/assignments/{assignment_id}
+PATCH /api/v1/assignments/{assignment_id}/status
+```
+
+### Collection Routes
+
+```text
+GET    /api/v1/collection-routes
+POST   /api/v1/collection-routes
+GET    /api/v1/collection-routes/{route_id}
+PATCH  /api/v1/collection-routes/{route_id}
+PATCH  /api/v1/collection-routes/{route_id}/status
+DELETE /api/v1/collection-routes/{route_id}
+```
+
+### Collection Points
+
+```text
+GET    /api/v1/collection-points
+POST   /api/v1/collection-points
+GET    /api/v1/collection-points/route/{route_id}
+GET    /api/v1/collection-points/{point_id}
+PATCH  /api/v1/collection-points/{point_id}
+PATCH  /api/v1/collection-points/{point_id}/collect
+DELETE /api/v1/collection-points/{point_id}
+```
+
+### Waste Bins
+
+```text
+GET   /api/v1/waste-bins
+POST  /api/v1/waste-bins
+GET   /api/v1/waste-bins/{waste_bin_id}
+PATCH /api/v1/waste-bins/{waste_bin_id}
+PATCH /api/v1/waste-bins/{waste_bin_id}/fill-level
+PATCH /api/v1/waste-bins/{waste_bin_id}/activate
+PATCH /api/v1/waste-bins/{waste_bin_id}/deactivate
+```
+
+### Maps
+
+```text
+GET /api/v1/maps/nearby-bins
+GET /api/v1/maps/nearby-concerns
+GET /api/v1/maps/nearby-collection-points
+```
+
+### Dashboards
+
+```text
+GET /api/v1/dashboard/admin
+GET /api/v1/dashboard/worker
+GET /api/v1/dashboard/citizen
+```
+
+### Analytics
+
+```text
+GET /api/v1/analytics/overview
+GET /api/v1/analytics/workers
+GET /api/v1/analytics/concerns/status
+GET /api/v1/analytics/concerns/categories
+GET /api/v1/analytics/concerns/priorities
+GET /api/v1/analytics/routes/status
+GET /api/v1/analytics/collection-points/status
+GET /api/v1/analytics/waste-bins/status
+GET /api/v1/analytics/analytics/public-impact
+```
+
+### Chatbot
+
+```text
+POST /api/v1/chatbot/ask
+```
+
+## Interactive API Documentation
+
+When the backend is running:
+
+```text
+Swagger UI:
 http://localhost:8000/docs
+
+ReDoc:
 http://localhost:8000/redoc
 ```
 
-The OpenAPI specification is also available through FastAPI.
+The generated OpenAPI specification should be treated as the source of truth for the exact API contract.
 
 ---
 
-# ⚙️ Backend Setup
-
-Navigate to the backend:
-
-```cmd
-cd urbanpulse-backend
-```
-
-Create / activate the Python virtual environment:
-
-```cmd
-python -m venv venv
-```
-
-Windows:
-
-```cmd
-venv\Scripts\activate
-```
-
-Install dependencies:
-
-```cmd
-pip install -r requirements.txt
-```
-
-Configure the environment variables.
-
-Start the backend:
-
-```cmd
-uvicorn app.main:app --reload --port 8000
-```
-
-Backend:
-=======
 # Getting Started
 
 ## Prerequisites
 
-Make sure the following are installed:
+Install:
 
-- **Node.js:** v18.0.0+
-- **Python:** 3.10+
-- **PostgreSQL:** v14+
+- Node.js 18+
+- Python 3.10+
+- PostgreSQL 14+
+- Git
 
 ---
 
-# 1. Backend Setup
+## 1. Backend Setup
 
-Navigate to the backend directory:
+Navigate to the backend:
 
 ```bash
 cd urbanpulse-backend
 ```
 
-### Create Virtual Environment
+Create a virtual environment:
 
 ```bash
 python -m venv .venv
 ```
 
-### Activate Virtual Environment
-
-#### Linux / macOS
+### Linux / macOS
 
 ```bash
 source .venv/bin/activate
 ```
 
-#### Windows
+### Windows
 
-```bash
+```powershell
 .venv\Scripts\activate
 ```
 
-### Install Dependencies
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Configure Environment Variables
+Create a PostgreSQL database named `urbanpulse_db`, then configure the environment variables described below.
 
-Create a `.env` file inside `urbanpulse-backend/`.
-
-```env
-DATABASE_URL=postgresql+psycopg2://<user>:<password>@localhost:5432/urbanpulse_db
-
-SECRET_KEY=your_super_secret_jwt_key
-
-ALGORITHM=HS256
-
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-```
-
-Replace the database credentials with your local PostgreSQL configuration.
-
-### Apply Database Migrations
+Apply migrations:
 
 ```bash
 alembic upgrade head
 ```
 
-### Start Development Server
+Start the backend:
 
 ```bash
-uvicorn main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000
 ```
 
-Backend will be available at:
->>>>>>> second
+Backend:
 
 ```text
 http://localhost:8000
 ```
 
-<<<<<<< HEAD
-Swagger:
-=======
-### API Documentation
-
-Swagger UI:
->>>>>>> second
-
-```text
-http://localhost:8000/docs
-```
-
-<<<<<<< HEAD
 ---
 
-# 🔑 Backend Environment Variables
+## 2. Frontend Setup
 
-The backend expects environment configuration including:
+Open a new terminal:
 
-```env
-DATABASE_URL=
-SECRET_KEY=
-ALGORITHM=
-ACCESS_TOKEN_EXPIRE_MINUTES=
-
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-CLOUDINARY_FOLDER=urbanpulse/concerns
-MAX_IMAGE_SIZE_BYTES=5242880
-```
-
-### Important
-
-Do **not** commit `.env` files, API keys, database passwords, JWT secrets, or Cloudinary secrets to GitHub.
-
----
-
-# 💻 Frontend Setup
-
-Navigate to the frontend:
-
-```cmd
+```bash
 cd urbanpulse-frontend
 ```
 
 Install dependencies:
 
-```cmd
-npm install
-```
-
-The frontend API configuration uses:
-
-```env
-VITE_API_URL=http://localhost:8000/api/v1
-```
-
-If the variable is not supplied, the frontend defaults to:
-
-```text
-http://localhost:8000/api/v1
-```
-
-Start the development server:
-
-```cmd
-npm run dev
-```
-
-The Vite development server normally runs at:
-=======
-ReDoc:
-
-```text
-http://localhost:8000/redoc
-```
-
----
-
-# 2. Frontend Setup
-
-Navigate to the frontend directory:
-
-```bash
-cd urbanpulse-frontend
-```
-
-### Install Dependencies
-
 ```bash
 npm install
 ```
 
-### Configure Environment Variables
-
-Create a `.env` file:
+Create the frontend environment file:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-### Start Development Server
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-The frontend will normally be available at:
->>>>>>> second
+Frontend:
 
 ```text
 http://localhost:5173
@@ -1353,114 +940,33 @@ http://localhost:5173
 
 ---
 
-<<<<<<< HEAD
-# 🔌 Frontend API Layer
+## 3. Chatbot Service Setup
 
-The frontend contains dedicated service modules for backend communication.
+Open another terminal:
 
-Examples include:
-
-```text
-src/api/
-├── admin.service.js
-├── analytics.service.js
-├── assignment.service.js
-├── auth.service.js
-├── axios.js
-├── bin.service.js
-├── chatbot.service.js
-├── citizen.service.js
-├── collectionPoint.service.js
-├── collectionRoute.service.js
-├── complaint.service.js
-├── concern.service.js
-├── location.service.js
-├── map.service.js
-├── notification.service.js
-├── profile.service.js
-├── suggestion.service.js
-└── worker.service.js
-```
-
-The Axios client:
-
-* Uses the configured backend base URL
-* Sends credentials
-* Reads the access token from local storage
-* Adds the Bearer token to authenticated requests
-
----
-
-# 🤖 Chatbot Setup
-
-Navigate to the chatbot:
-
-```cmd
+```bash
 cd urbanpulse-chatbot
 ```
 
 Install dependencies:
 
-```cmd
-pip install -r requirements.txt
-```
-
-The chatbot configuration supports environment variables such as:
-
-```env
-API_HOST=0.0.0.0
-API_PORT=8000
-OPENAI_MODEL=gpt-3.5-turbo
-OPENAI_API_KEY=
-EMBEDDING_MODEL=text-embedding-3-large
-DEBUG=False
-ENVIRONMENT=development
-```
-
-The chatbot application contains its own:
-
-* API layer
-* Services
-* Providers
-* RAG pipeline
-* Embedding service
-* Vector store
-* Knowledge base
-* Tests
-
----
-
-# 📚 Documentation
-
-The repository contains project documentation under:
-=======
-# 3. Chatbot Service Setup
-
-Navigate to the chatbot directory:
-
-```bash
-cd urbanpulse-chatbot
-```
-
-### Install Dependencies
-
 ```bash
 pip install -r requirements.txt
 ```
 
-### Run Verification Tests
-
-Test ChromaDB:
+Run the ChromaDB verification:
 
 ```bash
 python test_chromadb.py
 ```
 
-Test the RAG service:
+Run the RAG service verification:
 
 ```bash
 python test_rag_service.py
 ```
+
+Start the chatbot according to its configured application entrypoint.
 
 ---
 
@@ -1468,504 +974,211 @@ python test_rag_service.py
 
 ## Backend
 
-| Variable | Description | Example |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql+psycopg2://user:password@localhost:5432/urbanpulse_db` |
-| `SECRET_KEY` | JWT signing secret | `your_super_secret_jwt_key` |
-| `ALGORITHM` | JWT algorithm | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token expiration time | `1440` |
+Create `urbanpulse-backend/.env`:
+
+```env
+DATABASE_URL=postgresql+psycopg2://<user>:<password>@localhost:5432/urbanpulse_db
+
+SECRET_KEY=your_super_secret_jwt_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_FOLDER=urbanpulse/concerns
+
+MAX_IMAGE_SIZE_BYTES=5242880
+```
+
+The default maximum concern-image size is **5 MB**.
 
 ## Frontend
 
-| Variable | Description | Example |
-|---|---|---|
-| `VITE_API_BASE_URL` | Backend API base URL | `http://localhost:8000/api/v1` |
+Create `urbanpulse-frontend/.env`:
 
-> Never commit production secrets, database passwords, JWT secrets, or other sensitive credentials to the repository.
-
----
-
-# REST API Reference
-
-## Authentication
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/v1/auth/register` | Register a new user |
-| `POST` | `/api/v1/auth/login` | Login and receive JWT |
-| `POST` | `/api/v1/auth/refresh` | Refresh access token |
-| `GET` | `/api/v1/auth/me` | Fetch authenticated user |
-
----
-
-## User Management
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/v1/admin/users` | List all users |
-| `POST` | `/api/v1/admin/users` | Create user/worker account |
-| `PATCH` | `/api/v1/admin/users/{id}/status` | Activate/deactivate account |
-
-> Administrative endpoints require appropriate administrator privileges.
-
----
-
-## Concerns
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/v1/concerns/` | List concerns |
-| `POST` | `/api/v1/concerns/` | Create a geotagged concern |
-| `POST` | `/api/v1/concerns/{id}/images` | Upload concern evidence |
-
----
-
-## Collection Routes
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/v1/collection-routes` | List active routes |
-| `POST` | `/api/v1/collection-routes` | Create a collection route |
-| `DELETE` | `/api/v1/collection-routes/{id}` | Delete a collection route |
-
----
-
-## Collection Points
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/v1/collection-points` | List collection points |
-| `PATCH` | `/api/v1/collection-points/{id}/collect` | Mark point collected/report issue |
-
----
-
-## Waste Bins
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/v1/waste-bins` | List public waste bins |
-| `PATCH` | `/api/v1/waste-bins/{id}/fill-level` | Update bin fill level |
-
----
-
-## Suggestions
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/v1/citizen/suggestions` | Submit a citizen suggestion |
-| `PATCH` | `/api/v1/admin/suggestions/{id}` | Review and respond to suggestion |
-
----
-
-## Analytics
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/v1/analytics/overview` | Retrieve municipal analytics |
-
----
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
 
 ## Chatbot
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/v1/chatbot/ask` | Send a query to the RAG assistant |
+The chatbot may require configuration such as:
+
+```env
+API_HOST=0.0.0.0
+API_PORT=8000
+
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-3.5-turbo
+EMBEDDING_MODEL=text-embedding-3-large
+
+DEBUG=False
+ENVIRONMENT=development
+```
+
+Use the actual configuration expected by the chatbot service in the repository.
+
+> **Never commit `.env` files, API keys, database passwords, JWT secrets, or Cloudinary credentials to Git.**
 
 ---
 
 # Security
 
-UrbanPulse uses multiple layers of application security.
+UrbanPulse uses several security mechanisms.
 
-### JWT Authentication
+## Authentication
 
-JSON Web Tokens are used to authenticate users and authorize API requests.
+- JWT access tokens
+- Refresh-token mechanism
+- HTTP-only refresh-token cookie
+- Token rotation
+- Logout/session revocation
 
-### Role-Based Access Control
+## Authorization
 
-Different application roles have different permissions:
+Role-Based Access Control is applied to:
 
 ```text
 Citizen
-   │
-   ├── Report concerns
-   ├── Submit suggestions
-   └── Track reports
-
 Worker
-   │
-   ├── View assigned routes
-   ├── Execute collection tasks
-   └── Resolve assigned concerns
-
-Administrator
-   │
-   ├── Manage users
-   ├── Assign concerns
-   ├── Manage routes
-   ├── Monitor bins
-   └── View analytics
+Admin
 ```
 
-### Password Security
+Protected endpoints verify both authentication and the user's role before performing restricted operations.
 
-Passwords are securely hashed using **bcrypt** rather than being stored as plaintext.
+## Password Security
+
+Passwords are hashed using **bcrypt** and are never stored as plaintext.
+
+## Image Security
+
+Concern images are:
+
+- Validated before storage
+- Size-limited
+- Stored through Cloudinary
+- Associated with individual concerns
+
+Evidence-upload permissions are restricted according to the concern workflow and backend RBAC rules.
+
+---
+
+# Database
+
+UrbanPulse uses PostgreSQL with SQLAlchemy.
+
+Major domain entities include:
+
+- User
+- Waste Bin
+- Concern
+- Concern Image
+- Concern Support
+- Concern History
+- Assignment
+- Collection Route
+- Collection Point
+- Suggestion
+- Notification
+- Refresh Token
+
+Database schema changes are managed through Alembic migrations.
+
+```text
+Application
+    │
+    ▼
+SQLAlchemy ORM
+    │
+    ▼
+PostgreSQL
+```
+
+Detailed database information is available in:
+
+```text
+urbanpulse-docs/database_models.md
+```
+
+---
+
+# Testing
+
+Testing should cover both backend functionality and the chatbot/RAG system.
+
+## Backend
+
+Recommended coverage includes:
+
+- Authentication
+- Authorization
+- RBAC
+- CRUD operations
+- Concern workflows
+- Duplicate concern detection
+- Image uploads
+- Assignments
+- Collection routes
+- Collection points
+- Waste bins
+- Suggestions
+- Notifications
+- Dashboards
+- Analytics
+- Maps
+- Chatbot integration
+
+## Chatbot
+
+The chatbot contains tests for areas including:
+
+- ChromaDB integration
+- RAG retrieval
+- AI functionality
+- Service behavior
+- Image-related services where applicable
 
 ---
 
 # Documentation
 
-Additional project documentation is available in:
->>>>>>> second
+Additional documentation is maintained under:
 
 ```text
 urbanpulse-docs/
 ```
 
-<<<<<<< HEAD
-Important documentation files include:
-
-* `features.md`
-* `api.md`
-* `database_models.md`
-* `project_structure.md`
-
-### Documentation Note
-
-The implementation is continuously evolving. Therefore, the **current backend source code and generated OpenAPI documentation are the source of truth for implemented API behavior**.
-
-Some older documentation may describe planned or previous endpoints that are no longer present in the current implementation.
-
----
-
-# 🗄️ Database
-
-The backend is designed around a relational database architecture using PostgreSQL and SQLAlchemy.
-
-Major domain entities include:
-
-* User
-* Waste Bin
-* Concern
-* Concern Image
-* Concern Support
-* Assignment
-* Concern History
-* Collection Route
-* Collection Point
-* Suggestion
-* Notification
-* Refresh Token
-
-Database schema changes are managed through **Alembic migrations**.
-
----
-
-# 🧪 Testing
-
-The project contains backend and chatbot tests.
-
-Backend testing should cover:
-
-* Authentication
-* Authorization
-* Role restrictions
-* CRUD operations
-* Concern workflows
-* Duplicate concern handling
-* Image uploads
-* Assignments
-* Routes
-* Collection points
-* Waste bins
-* Suggestions
-* Notifications
-* Dashboards
-* Analytics
-* Maps
-* Chatbot integration
-
-The chatbot contains tests covering areas such as:
-
-* AI functionality
-* Complaint handling
-* RAG functionality
-* Image services
-
----
-
-# 🔍 Validation Workflow
-
-A recommended development workflow is:
-
-```text
-Implement
-   ↓
-Run Application
-   ↓
-Test API
-   ↓
-Test Frontend Integration
-   ↓
-Test Edge Cases
-   ↓
-Validate Database
-   ↓
-Validate Security
-   ↓
-Review Code
-   ↓
-Git Commit
-   ↓
-Git Push
-```
-
-Swagger / OpenAPI can be used for API testing during backend development.
-
----
-
-# 🌿 Git Workflow
-
-Create a feature branch when appropriate:
-
-```cmd
-git checkout -b feature/<feature-name>
-```
-
-Check changes:
-
-```cmd
-git status
-```
-
-Review the diff:
-
-```cmd
-git diff
-```
-
-Stage changes:
-
-```cmd
-git add .
-```
-
-Commit:
-
-```cmd
-git commit -m "Describe the change"
-```
-
-Push:
-
-```cmd
-git push origin <branch-name>
-```
-
-For the main branch:
-
-```cmd
-git push origin main
-```
-
----
-
-# 🧩 Design Principles
-
-UrbanPulse follows a modular backend architecture.
-
-The backend separates:
-
-```text
-API Routes
-    ↓
-Dependencies
-    ↓
-Services
-    ↓
-Models / Database
-```
-
-Additional separation is provided through:
-
-* Schemas
-* Authentication dependencies
-* Role dependencies
-* Utility functions
-* Middleware
-* Providers
-* External-service integrations
-
-This makes the system easier to maintain, test, and extend.
-
----
-
-# 📈 Dashboards & Analytics
-
-Different roles receive different dashboards.
-
-### Admin Dashboard
-
-Provides administrative visibility into areas such as:
-
-* Users
-* Concerns
-* Assignments
-* Routes
-* Collection points
-* Waste bins
-* Suggestions
-* System analytics
-
-### Worker Dashboard
-
-Provides access to:
-
-* Assigned work
-* Collection routes
-* Collection points
-* Worker metrics
-* Operational status
-
-### Citizen Dashboard
-
-Provides access to:
-
-* Personal concerns
-* Concern status
-* Notifications
-* Suggestions
-* Citizen-facing information
-
----
-
-# ☁️ Cloudinary Integration
-
-UrbanPulse uses Cloudinary for concern-image storage.
-
-The backend contains a dedicated Cloudinary service responsible for communicating with the external image-storage platform.
-
-Image uploads are handled through the concern-image API.
-
-The system validates uploads before sending them to Cloudinary.
-
----
-
-# 🚨 Error Handling
-
-The backend provides structured error handling through:
-
-* HTTP status codes
-* Validation errors
-* Authentication errors
-* Authorization errors
-* Resource-not-found handling
-* Duplicate detection
-* External-service error handling
-* Middleware-based exception handling
-* Request logging
-
-Examples of external-service failures include image-storage and chatbot-provider errors.
-
----
-
-# 🔮 Future Scope
-
-The project can be extended with:
-
-* 🗺️ Advanced route optimization
-* 📊 Predictive waste analytics
-* 🗑️ IoT-enabled smart bins
-* 📱 Dedicated mobile application
-* 📡 Offline worker functionality
-* 📩 SMS and email notifications
-* 🤖 AI-based waste-image classification
-* 🔳 QR-based waste-bin identification
-* 📈 Predictive overflow detection
-* 🧭 Advanced GIS-based municipal planning
-* 🚛 Automated collection scheduling
-* 🌐 Real-time operational monitoring
-
----
-
-# 🎯 Project Goals
-
-UrbanPulse aims to create a centralized smart waste-management ecosystem that:
-
-1. Makes waste-related reporting easier.
-2. Improves visibility of waste-management concerns.
-3. Helps administrators manage workers and resources.
-4. Makes collection operations more organized.
-5. Provides location-aware waste-management information.
-6. Uses analytics to support better decision-making.
-7. Provides citizens with a conversational AI interface.
-8. Creates a scalable foundation for future smart-city integrations.
-
----
-
-# 🚀 Project Status
-
-UrbanPulse is an actively developed full-stack project.
-
-The system currently includes:
-
-* Role-based authentication
-* Citizen, Worker and Admin workflows
-* Concern management
-* Image evidence
-* Cloudinary integration
-* Assignments
-* Collection routes
-* Collection points
-* Waste-bin management
-* Notifications
-* Suggestions
-* Dashboards
-* Analytics
-* Location-based APIs
-* AI chatbot
-* RAG infrastructure
-* PostgreSQL-oriented backend architecture
-* React frontend
-
----
-
-# 📜 License
-
-This project is developed as part of the UrbanPulse project and is intended for educational, development, and demonstration purposes unless a separate license is provided by the project owners.
-
----
-
-## 💡 UrbanPulse
-
-**Report. Connect. Collect. Improve.**
-
-Building a smarter and more connected approach to urban waste management.
-=======
-Available documentation includes:
-
 | File | Description |
 |---|---|
-| `api.md` | Detailed API endpoint documentation |
-| `database_models.md` | Database models, relations, and data dictionary |
+| `api.md` | Detailed REST API documentation |
+| `database_models.md` | Database models, relationships, and data dictionary |
 | `features.md` | Functional feature specifications |
-| `project_structure.md` | Architecture and directory breakdown |
+| `project_structure.md` | Architecture and directory documentation |
 | `SRS.pdf` | Software Requirements Specification |
 | `urban_pulse_erd.png` | Entity Relationship Diagram |
 | `urban_pulse_physical_erd.jpeg` | Physical ER Diagram |
+
+> The current backend source code and generated OpenAPI documentation should be treated as the source of truth for implemented API behavior. Supporting documentation may change as the project evolves.
 
 ---
 
 # Development Workflow
 
-A typical local development setup consists of three services:
+A typical local development environment uses three services.
 
 ### Terminal 1 — Backend
 
 ```bash
 cd urbanpulse-backend
 source .venv/bin/activate
-uvicorn main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000
+```
+
+On Windows, activate the virtual environment using:
+
+```powershell
+.venv\Scripts\activate
 ```
 
 ### Terminal 2 — Frontend
@@ -1977,57 +1190,110 @@ npm run dev
 
 ### Terminal 3 — Chatbot
 
-Run the chatbot service according to its application entrypoint and configuration.
+```bash
+cd urbanpulse-chatbot
+```
+
+Run the chatbot using its configured entrypoint.
 
 The frontend communicates with the FastAPI backend, while the backend integrates with the chatbot service for AI-powered civic assistance.
 
 ---
 
-# Project Goals
+# Design Principles
 
-UrbanPulse aims to create a more transparent and efficient municipal waste-management workflow by connecting:
+UrbanPulse follows a modular backend architecture:
 
 ```text
-Citizens
-    ↓
-Issue Reporting
-    ↓
-Municipal Administration
-    ↓
-Task Assignment
-    ↓
-Sanitation Workers
-    ↓
-Field Resolution
-    ↓
-Citizen Feedback
+API Routes
+    │
+    ▼
+Dependencies / RBAC
+    │
+    ▼
+Services
+    │
+    ▼
+Models / Database
 ```
 
-This creates a continuous feedback loop between citizens, municipal authorities, and field workers.
+Supporting layers include:
+
+- Pydantic schemas
+- Authentication dependencies
+- Role dependencies
+- Middleware
+- Utility functions
+- External-service providers
+- Image-storage integration
+- AI/RAG services
+
+This separation keeps business logic independent from transport, persistence, and external integrations, making the system easier to test and extend.
 
 ---
 
 # Future Scope
 
-Potential extensions to the platform include:
+Potential extensions include:
 
 - Real-time GPS tracking of sanitation vehicles
 - IoT-based automatic waste-bin fill sensors
 - Automated route optimization
-- Predictive waste generation analytics
-- Ward-level heatmaps
-- Mobile applications for field workers
+- Predictive waste-generation analytics
+- Ward-level GIS heatmaps
+- Dedicated mobile applications
+- Offline worker functionality
 - Multilingual AI civic assistance
 - Automated concern prioritization
-- Computer-vision-based waste classification
-- Push notifications
-- Advanced municipal performance dashboards
+- AI/computer-vision-based waste classification
+- Push, SMS, and email notifications
+- Predictive overflow detection
+- QR-based waste-bin identification
+- Automated collection scheduling
+- Advanced municipal performance monitoring
+
+---
+
+# Project Status
+
+UrbanPulse is an actively developed full-stack project.
+
+Current system capabilities include:
+
+- Role-based authentication
+- Citizen, Worker, and Admin workflows
+- Concern reporting and management
+- Geolocation and map-based operations
+- Duplicate concern detection
+- Community concern support
+- Image evidence
+- Cloudinary integration
+- Worker assignments
+- Collection routes
+- Collection points
+- Waste-bin management
+- Notifications
+- Citizen suggestions
+- Role-specific dashboards
+- Administrative analytics
+- Nearby-resource APIs
+- AI chatbot
+- RAG infrastructure
+- PostgreSQL database architecture
+- React frontend
 
 ---
 
 # License
 
-This project is licensed under the **MIT License**.
+This project is intended for educational, development, and demonstration purposes unless a separate license is provided by the project owners.
 
-See the `LICENSE` file for the complete license text.
->>>>>>> second
+If the repository contains a `LICENSE` file, that file is the authoritative source for the project's licensing terms.
+
+---
+
+## UrbanPulse
+
+**Report. Connect. Collect. Improve.**
+
+A centralized approach to smarter, more transparent, and more connected urban waste management.

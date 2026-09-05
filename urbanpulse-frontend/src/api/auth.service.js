@@ -24,4 +24,19 @@ export const authService = {
     localStorage.removeItem('access_token')
     window.location.href = '/login'
   },
+
+  //forgot password
+  forgotPassword: async (identifier) => {
+  const response = await api.post("/auth/forgot-password", { identifier });
+  return response.data;
+},
+
+//reset-password
+resetPassword: async ({ token, new_password }) => {
+  const response = await api.post("/auth/reset-password", {
+    token,
+    new_password,
+  });
+  return response.data;
+},
 }

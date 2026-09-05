@@ -198,12 +198,12 @@ export default function Login() {
             </div>
 
             <div className="-mt-2 flex justify-end">
-              <a
-                href="#forgot-password"
+              <Link
+                to="/forgot-password"
                 className="text-[12.5px] font-medium text-[#005B4F] transition-colors hover:text-[#159A6A]"
               >
                 Forgot Password?
-              </a>
+              </Link>
             </div>
 
             <motion.button

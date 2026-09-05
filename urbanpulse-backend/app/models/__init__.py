@@ -10,3 +10,4 @@ from app.models.collection_route import CollectionRoute
 from app.models.collection_point import CollectionPoint
 from app.models.suggestion import Suggestion
 from app.models.refresh_token import RefreshToken
+from app.models.password_reset_token import PasswordResetToken
