@@ -18,3 +18,16 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+class ForgotPasswordRequest(BaseModel):
+    identifier: str = Field(
+        ...,
+        description="User email or registered phone number",
+        min_length=3,
+        max_length=255,
+    )
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8, max_length=72)
