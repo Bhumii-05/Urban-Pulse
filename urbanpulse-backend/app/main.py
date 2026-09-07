@@ -33,7 +33,7 @@ app = FastAPI(
 # CORS config
 
 origins = [
-    "https://urban-pulse-lake.vercel.app/",
+    "https://urban-pulse-lake.vercel.app",
 ]
 
 
