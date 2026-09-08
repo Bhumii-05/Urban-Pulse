@@ -156,17 +156,14 @@ def create_concern(
 
 def get_concerns(
     db: Session,
+    user_id: int | None = None,
 ):
-    return (
-        db.query(Concern)
-        .filter(
-            Concern.is_deleted.is_(False)
-        )
-        .order_by(
-            Concern.created_at.desc()
-        )
-        .all()
-    )
+    query = db.query(Concern).filter(Concern.is_deleted.is_(False))
+
+    if user_id is not None:
+        query = query.filter(Concern.reported_by == user_id)
+
+    return query.order_by(Concern.created_at.desc()).all()
 
 
 def get_concern_by_id(
