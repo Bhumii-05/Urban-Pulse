@@ -24,6 +24,8 @@ from app.api.v1.dashboard import (
 )
 from app.api.v1 import analytics
 
+from app.core.config import settings
+
 app = FastAPI(
     title="UrbanPulse API",
     version="1.0.0",
@@ -32,10 +34,17 @@ app = FastAPI(
 
 # CORS config
 
-origins = [
-    "https://urban-pulse-lake.vercel.app",
-]
-
+# Collect allowed origins dynamically
+origins = list(
+    set(
+        settings.ALLOWED_ORIGINS
+        + [
+            settings.FRONTEND_URL,
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+    )
+)
 
 app.add_middleware(
     CORSMiddleware,

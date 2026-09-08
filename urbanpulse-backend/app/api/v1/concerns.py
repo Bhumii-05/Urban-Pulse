@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.dependencies.auth import get_current_user
 from app.dependencies.database import get_db
 from app.models.concern import ConcernStatus
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.concern import (
     ConcernCreate,
     ConcernCreateResponse,
@@ -91,9 +91,6 @@ def create_concern(
 
     return result["concern"]
 
-# GET ALL CONCERNS
-# AUTHENTICATED ONLY
-
 @router.get(
     "/",
     response_model=list[ConcernResponse],
@@ -102,10 +99,17 @@ def get_concerns(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return concern_services.get_concerns(db)
+    # Only citizens are scoped to their own reports; workers/admins get the full list
+    filter_user_id = (
+        current_user.id if current_user.role == UserRole.CITIZEN else None
+    )
+
+    return concern_services.get_concerns(db=db, user_id=filter_user_id)
+
 
 # GET SINGLE CONCERN
 # AUTHENTICATED ONLY
+
 
 @router.get(
     "/{concern_id}",
@@ -125,6 +129,16 @@ def get_concern(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Concern not found",
+        )
+
+    # Prevent a citizen from accessing someone else's concern directly via ID/URL
+    if (
+        current_user.role == UserRole.CITIZEN
+        and concern.reported_by != current_user.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to view this concern",
         )
 
     return concern
