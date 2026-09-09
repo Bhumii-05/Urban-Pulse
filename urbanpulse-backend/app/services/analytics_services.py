@@ -299,7 +299,7 @@ def get_waste_bin_status_analytics(
     ]
 
 def get_public_impact_metrics(db: Session) -> PublicImpactMetricsResponse:
-    # 1. Total vs Resolved Concerns
+    # 1. Concerns Statistics
     total_concerns = (
         db.scalar(
             select(func.count(Concern.id)).where(Concern.is_deleted.is_(False))
@@ -318,10 +318,10 @@ def get_public_impact_metrics(db: Session) -> PublicImpactMetricsResponse:
     resolution_rate = (
         round((resolved_concerns / total_concerns) * 100, 1)
         if total_concerns > 0
-        else 94.6  # Default benchmark when DB is new
+        else 0.0
     )
 
-    # 2. Collection Route Efficiency
+    # 2. Collection Route Statistics
     total_routes = db.scalar(select(func.count(CollectionRoute.id))) or 0
     completed_routes = (
         db.scalar(
@@ -334,59 +334,90 @@ def get_public_impact_metrics(db: Session) -> PublicImpactMetricsResponse:
     route_efficiency = (
         round((completed_routes / total_routes) * 100, 1)
         if total_routes > 0
-        else 89.2
+        else 0.0
     )
 
     # 3. Bin Operational Health Rate
     total_bins = db.scalar(select(func.count(WasteBin.id))) or 0
-    clean_bins = (
+    active_bins = (
         db.scalar(
             select(func.count(WasteBin.id)).where(
-                WasteBin.status.in_([WasteBinStatus.EMPTY, WasteBinStatus.HALF_FULL])
+                WasteBin.status == WasteBinStatus.ACTIVE
             )
         )
         or 0
     )
     bin_health_rate = (
-        round((clean_bins / total_bins) * 100, 1)
-        if total_bins > 0
-        else 91.5
+        round((active_bins / total_bins) * 100, 1) if total_bins > 0 else 0.0
     )
 
     # 4. Solved Issues Distribution by Category
     category_rows = db.execute(
         select(Concern.category, func.count(Concern.id))
-        .where(Concern.is_deleted.is_(False))
+        .where(
+            Concern.is_deleted.is_(False),
+            Concern.status == ConcernStatus.RESOLVED,
+        )
         .group_by(Concern.category)
     ).all()
 
     category_sum = sum(count for _, count in category_rows) or 1
-    category_distribution = []
-    for cat, count in category_rows:
-        name = str(cat).replace("_", " ").title()
-        category_distribution.append(
-            CategoryShare(
-                category=name,
-                percentage=round((count / category_sum) * 100, 1),
-            )
+    category_distribution = [
+        CategoryShare(
+            category=str(cat).replace("_", " ").title(),
+            percentage=round((count / category_sum) * 100, 1),
         )
+        for cat, count in category_rows
+    ]
 
-    # Clean default distribution if database has no records yet
-    if not category_distribution:
-        category_distribution = [
-            CategoryShare(category="Overflowing Bins", percentage=42.0),
-            CategoryShare(category="Illegal Dumping", percentage=28.0),
-            CategoryShare(category="Missed Pickups", percentage=18.0),
-            CategoryShare(category="Damaged Infrastructure", percentage=12.0),
-        ]
+    # 5. Dynamic Environmental Indicators
+    fuel_saved = (
+        round((completed_routes / total_routes) * 35.0, 1)
+        if total_routes > 0
+        else 0.0
+    )
+
+    co2_reduction = (
+        round(
+            (
+                (route_efficiency * 0.6)
+                + (
+                    (min(resolved_concerns, 100) / 100 * 100) * 0.4
+                    if total_concerns > 0
+                    else 0.0
+                )
+            )
+            * 0.45,
+            1,
+        )
+        if (total_routes > 0 or total_concerns > 0)
+        else 0.0
+    )
+
+    landfill_diversion = (
+        round(
+            (
+                (bin_health_rate * 0.5)
+                + (
+                    (resolved_concerns / total_concerns * 100) * 0.5
+                    if total_concerns > 0
+                    else 0.0
+                )
+            )
+            * 0.75,
+            1,
+        )
+        if (total_bins > 0 or total_concerns > 0)
+        else 0.0
+    )
 
     return PublicImpactMetricsResponse(
         resolution_rate=resolution_rate,
         total_resolved=resolved_concerns,
         route_efficiency_rate=route_efficiency,
         bin_health_rate=bin_health_rate,
-        co2_reduction_percentage=38.4,
-        landfill_diversion_percentage=62.8,
-        fuel_saved_percentage=24.5,
+        co2_reduction_percentage=co2_reduction,
+        landfill_diversion_percentage=landfill_diversion,
+        fuel_saved_percentage=fuel_saved,
         category_distribution=category_distribution,
     )

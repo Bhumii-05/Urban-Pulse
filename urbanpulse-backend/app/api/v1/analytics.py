@@ -137,9 +137,9 @@ def analytics_waste_bin_status(
     return get_waste_bin_status_analytics(db)
 
 @router.get(
-    "/analytics/public-impact",
+    "/public-impact",
     response_model=PublicImpactMetricsResponse,
-    summary="Public environmental and operational impact"
+    summary="Public environmental and operational impact",
 )
 def read_public_impact(db: Session = Depends(get_db)):
     return get_public_impact_metrics(db)
