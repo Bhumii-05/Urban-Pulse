@@ -28,10 +28,13 @@ class Settings(BaseSettings):
     MAX_IMAGE_SIZE_BYTES: int = 5 * 1024 * 1024
 
     # =========================
-    # Email - Resend
+    # Email - Gmail SMTP
     # =========================
-    RESEND_API_KEY: str
-    MAIL_FROM: str = "onboarding@resend.dev"
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+    MAIL_FROM: str
 
     # =========================
     # Frontend
