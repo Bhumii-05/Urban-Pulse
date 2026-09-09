@@ -1,35 +1,29 @@
-from typing import Annotated
-
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Cookie,
-    Depends,
-    HTTPException,
-    Response,
-    status,
-)
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from app.core.security import decode_access_token
+from app.db.session import get_db
 from app.dependencies.auth import get_current_user
-from app.dependencies.database import get_db
 from app.models.user import User
 from app.schemas.auth import (
     ForgotPasswordRequest,
     LoginRequest,
+    RefreshTokenRequest,
     RegisterRequest,
     ResetPasswordRequest,
-    TokenResponse,
 )
-from app.schemas.user import UserResponse
 from app.services.auth_services import (
     authenticate_user,
     create_user_tokens,
-    refresh_user_tokens,
     register_user,
+    refresh_user_tokens,
     revoke_user_refresh_token,
 )
-from app.services.email_service import send_password_reset_email
+from app.services.email_service import (
+    send_password_reset_email,
+    send_password_reset_success_email,
+)
 from app.services.password_reset_service import (
     create_password_reset_token,
     reset_user_password,
@@ -38,155 +32,154 @@ from app.services.password_reset_service import (
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post(
-    "/register",
-    response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED,
-)
+# =========================
+# REGISTER
+# =========================
+
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(
     user_data: RegisterRequest,
     db: Session = Depends(get_db),
 ):
     try:
-        return register_user(db, user_data)
-    except ValueError as error:
+        user = register_user(db, user_data)
+
+        return {
+            "message": "User registered successfully",
+            "user_id": user.id,
+            "email": user.email,
+            "role": user.role.value,
+        }
+
+    except ValueError as err:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(error),
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(err),
         )
 
 
-@router.post(
-    "/login",
-    response_model=TokenResponse,
-)
+# =========================
+# LOGIN
+# =========================
+
+@router.post("/login")
 def login(
-    user_data: LoginRequest,
-    response: Response,
+    login_data: LoginRequest,
     db: Session = Depends(get_db),
 ):
     user = authenticate_user(
         db,
-        user_data.email,
-        user_data.password,
+        login_data.email,
+        login_data.password,
     )
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
-            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token, refresh_token = create_user_tokens(db, user)
-
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        max_age=7 * 24 * 60 * 60,
-        expires=7 * 24 * 60 * 60,
-        samesite="lax",
-        secure=False,
+    access_token, refresh_token = create_user_tokens(
+        db,
+        user,
     )
 
     return {
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "full_name": user.full_name,
+            "email": user.email,
+            "role": user.role.value,
+        },
     }
 
 
-@router.post(
-    "/refresh",
-    response_model=TokenResponse,
-)
+# =========================
+# REFRESH TOKEN
+# =========================
+
+@router.post("/refresh")
 def refresh(
-    response: Response,
-    refresh_token: Annotated[str | None, Cookie()] = None,
+    data: RefreshTokenRequest,
     db: Session = Depends(get_db),
 ):
-    if not refresh_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token missing",
-        )
-
     try:
-        new_access_token, new_refresh_token = refresh_user_tokens(
+        access_token, refresh_token = refresh_user_tokens(
             db,
-            refresh_token,
+            data.refresh_token,
         )
-    except ValueError as error:
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+        }
+
+    except ValueError as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(error),
+            detail=str(err),
         )
 
-    response.set_cookie(
-        key="refresh_token",
-        value=new_refresh_token,
-        httponly=True,
-        max_age=7 * 24 * 60 * 60,
-        expires=7 * 24 * 60 * 60,
-        samesite="lax",
-        secure=False,
-    )
 
-    return {
-        "access_token": new_access_token,
-        "token_type": "bearer",
-    }
+# =========================
+# LOGOUT
+# =========================
 
-
-@router.post(
-    "/logout",
-    status_code=status.HTTP_200_OK,
-)
+@router.post("/logout")
 def logout(
-    response: Response,
-    refresh_token: Annotated[str | None, Cookie()] = None,
+    data: RefreshTokenRequest,
     db: Session = Depends(get_db),
 ):
-    if refresh_token:
-        revoke_user_refresh_token(
-            db,
-            refresh_token,
-        )
-
-    response.delete_cookie(
-        key="refresh_token",
-        httponly=True,
-        samesite="lax",
-        secure=False,
+    revoke_user_refresh_token(
+        db,
+        data.refresh_token,
     )
 
     return {
-        "detail": "Successfully logged out",
+        "detail": "Logged out successfully"
     }
 
 
-@router.get(
-    "/me",
-    response_model=UserResponse,
-)
+# =========================
+# CURRENT USER
+# =========================
+
+@router.get("/me")
 def get_me(
     current_user: User = Depends(get_current_user),
 ):
-    return current_user
+    return {
+        "id": current_user.id,
+        "full_name": current_user.full_name,
+        "email": current_user.email,
+        "phone_number": current_user.phone_number,
+        "role": current_user.role.value,
+        "is_active": current_user.is_active,
+    }
 
 
-@router.post("/forgot-password", status_code=status.HTTP_200_OK)
-def forgot_password(
+# =========================
+# FORGOT PASSWORD
+# =========================
+
+@router.post("/forgot-password")
+async def forgot_password(
     data: ForgotPasswordRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    user, raw_token = create_password_reset_token(db, data.identifier)
+    user, raw_token = create_password_reset_token(
+        db,
+        data.identifier,
+    )
 
-    # Return the exact same message to prevent user enumeration
+    # Always return the same response so that
+    # account existence is not revealed.
     if user and raw_token:
-        background_tasks.add_task(
-            send_password_reset_email,
+        await send_password_reset_email(
             to_email=user.email,
             user_name=user.full_name,
             raw_token=raw_token,
@@ -197,14 +190,32 @@ def forgot_password(
     }
 
 
+# =========================
+# RESET PASSWORD
+# =========================
+
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
-def reset_password(
+async def reset_password(
     data: ResetPasswordRequest,
     db: Session = Depends(get_db),
 ):
     try:
-        reset_user_password(db, data.token, data.new_password)
-        return {"detail": "Password has been successfully reset."}
+        user = reset_user_password(
+            db,
+            data.token,
+            data.new_password,
+        )
+
+        # Send confirmation email after successful reset
+        await send_password_reset_success_email(
+            to_email=user.email,
+            user_name=user.full_name,
+        )
+
+        return {
+            "detail": "Password has been successfully reset."
+        }
+
     except ValueError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

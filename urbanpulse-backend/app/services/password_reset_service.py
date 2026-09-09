@@ -35,6 +35,7 @@ def create_password_reset_token(
             PasswordResetToken.used.is_(False),
         )
     ).all()
+
     for t in existing_tokens:
         t.used = True
 
@@ -59,7 +60,7 @@ def reset_user_password(
     db: Session,
     raw_token: str,
     new_password: str,
-) -> None:
+) -> User:
     token_hash = hash_token(raw_token)
 
     record = db.scalar(
@@ -73,7 +74,10 @@ def reset_user_password(
     if not record:
         raise ValueError("Invalid or expired password reset token")
 
-    user = db.scalar(select(User).where(User.id == record.user_id))
+    user = db.scalar(
+        select(User).where(User.id == record.user_id)
+    )
+
     if not user or not user.is_active:
         raise ValueError("User not found or inactive")
 
@@ -92,3 +96,5 @@ def reset_user_password(
     )
 
     db.commit()
+
+    return user
