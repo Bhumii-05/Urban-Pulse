@@ -15,11 +15,10 @@ class Settings(BaseSettings):
 
     MAX_IMAGE_SIZE_BYTES: int = 5 * 1024 * 1024
 
-    # Email & SMTP Settings
-    SMTP_USER: str
-    SMTP_PASSWORD: str
-    SMTP_HOST: str = "smtp.gmail.com"
-    SMTP_PORT: int = 587
+    # Brevo Email Settings
+    BREVO_API_KEY: str
+    SENDER_EMAIL: str
+
     FRONTEND_URL: str = "http://localhost:5173"
 
     # CORS Settings
