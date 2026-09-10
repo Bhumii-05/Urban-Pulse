@@ -25,7 +25,7 @@ jinja_env = Environment(
 )
 
 
-def send_password_reset_email(
+async def send_password_reset_email(
     to_email: str,
     user_name: str,
     raw_token: str,
