@@ -42,6 +42,10 @@ python-dotenv==1.2.2
 python-jose==3.5.0
 python-multipart==0.0.32
 regex==2026.9.3
+requests==2.34.2
+requests-oauthlib==2.0.0
+rich==15.0.0
+rpds-py==2026.6.3
 rsa==4.9.1
 shapely==2.1.2
 six==1.17.0

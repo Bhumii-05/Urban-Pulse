@@ -19,12 +19,11 @@ from app.api.v1.suggestions import (
 from app.api.v1.suggestions import (
     admin_router as suggestion_admin_router,
 )
-from app.api.v1.dashboard import (
-    router as dashboard_router,
-)
+from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1 import analytics
 
 from app.core.config import settings
+
 
 app = FastAPI(
     title="UrbanPulse API",
@@ -32,17 +31,14 @@ app = FastAPI(
 )
 
 
-# CORS config
+# =========================
+# CORS
+# =========================
 
-# Collect allowed origins dynamically
 origins = list(
     set(
         settings.ALLOWED_ORIGINS
-        + [
-            settings.FRONTEND_URL,
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-        ]
+        + [settings.FRONTEND_URL]
     )
 )
 
@@ -55,6 +51,10 @@ app.add_middleware(
 )
 
 
+# =========================
+# ROOT
+# =========================
+
 @app.get("/")
 def root():
     return {
@@ -62,11 +62,19 @@ def root():
     }
 
 
+# =========================
+# AUTH
+# =========================
+
 app.include_router(
     auth_router,
     prefix="/api/v1",
 )
 
+
+# =========================
+# USERS
+# =========================
 
 app.include_router(
     users_router,
@@ -74,11 +82,19 @@ app.include_router(
 )
 
 
+# =========================
+# PROFILE
+# =========================
+
 app.include_router(
     profile_router,
     prefix="/api/v1",
 )
 
+
+# =========================
+# CONCERNS
+# =========================
 
 app.include_router(
     concerns.router,
@@ -86,11 +102,19 @@ app.include_router(
 )
 
 
+# =========================
+# NOTIFICATIONS
+# =========================
+
 app.include_router(
     notifications_router,
     prefix="/api/v1",
 )
 
+
+# =========================
+# CONCERN IMAGES
+# =========================
 
 app.include_router(
     concern_images.router,
@@ -98,11 +122,14 @@ app.include_router(
 )
 
 
+# =========================
+# SUGGESTIONS
+# =========================
+
 app.include_router(
     suggestion_citizen_router,
     prefix="/api/v1",
 )
-
 
 app.include_router(
     suggestion_admin_router,
@@ -110,11 +137,19 @@ app.include_router(
 )
 
 
+# =========================
+# DASHBOARD
+# =========================
+
 app.include_router(
     dashboard_router,
     prefix="/api/v1",
 )
 
+
+# =========================
+# ASSIGNMENTS
+# =========================
 
 app.include_router(
     assignments.router,
@@ -122,11 +157,19 @@ app.include_router(
 )
 
 
+# =========================
+# COLLECTION ROUTES
+# =========================
+
 app.include_router(
     collection_routes.router,
     prefix="/api/v1",
 )
 
+
+# =========================
+# COLLECTION POINTS
+# =========================
 
 app.include_router(
     collection_points.router,
@@ -134,11 +177,19 @@ app.include_router(
 )
 
 
+# =========================
+# WASTE BINS
+# =========================
+
 app.include_router(
     waste_bins.router,
     prefix="/api/v1",
 )
 
+
+# =========================
+# MAPS
+# =========================
 
 app.include_router(
     maps.router,
@@ -146,10 +197,19 @@ app.include_router(
 )
 
 
+# =========================
+# ANALYTICS
+# =========================
+
 app.include_router(
     analytics.router,
     prefix="/api/v1",
 )
+
+
+# =========================
+# CHATBOT
+# =========================
 
 app.include_router(
     chatbot.router,

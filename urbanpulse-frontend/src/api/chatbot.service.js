@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:8000/api/v1";
+const API_BASE = "https://urban-pulse-r5jl.onrender.com/api/v1";
 const AI_BASE = `${API_BASE}/ai`;
 
 /*
