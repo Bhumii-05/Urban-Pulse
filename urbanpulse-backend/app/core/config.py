@@ -27,18 +27,15 @@ class Settings(BaseSettings):
     # =========================
     MAX_IMAGE_SIZE_BYTES: int = 5 * 1024 * 1024
 
-    # =========================
-    # Email - Gmail SMTP
-    # =========================
-    SMTP_HOST: str
-    SMTP_PORT: int
-    SMTP_USER: str
-    SMTP_PASSWORD: str
-    MAIL_FROM: str
+
+    # Brevo Email Settings
+    BREVO_API_KEY: str
+    SENDER_EMAIL: str
 
     # =========================
     # Frontend
     # =========================
+
     FRONTEND_URL: str = "http://localhost:5173"
 
     # =========================
