@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const AI_BASE = "https://urban-pulse-ct8w.onrender.com/api/v1/ai";
+const AI_BASE = import.meta.env.VITE_AI_BASE_API;
 
 // ============================================
 // ASK URBANPULSE AI
