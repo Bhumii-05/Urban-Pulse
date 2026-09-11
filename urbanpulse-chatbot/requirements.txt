@@ -13,3 +13,5 @@ pytest-asyncio
 httpx
 
 Pillow
+
+python-docx
