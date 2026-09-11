@@ -12,3 +12,4 @@ httpx
 Pillow
 python-docx
 pypdf
+langchain-text-splitters
