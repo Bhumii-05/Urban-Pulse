@@ -14,7 +14,7 @@ from app.rag.text_splitter import TextSplitter
 from app.rag.vector_store import ChromaVectorStore
 
 
-def ingest_document(file_path: str) -> None:
+def ingest_document(file_path: str, document_type: str) -> None:
     path = Path(file_path)
 
     if not path.exists():
@@ -45,10 +45,15 @@ def ingest_document(file_path: str) -> None:
     print("\n[4/5] Generating embeddings...")
     embedding_service = EmbeddingService(provider=provider)
     embedded_chunks = embedding_service.embed_chunks(chunks)
+
     print(f"Generated {len(embedded_chunks)} embeddings.")
 
     if not embedded_chunks:
         raise RuntimeError("No embeddings were generated.")
+
+    # Add document-level metadata
+    for embedded_chunk in embedded_chunks:
+        embedded_chunk.chunk.metadata["document_type"] = document_type
 
     # 5. Store embeddings in ChromaDB
     print("\n[5/5] Storing embeddings in ChromaDB...")
@@ -74,14 +79,18 @@ def ingest_document(file_path: str) -> None:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        print("Usage:\npython scripts/ingest_documents.py <document_path>")
+    if len(sys.argv) != 3:
+        print(
+            "Usage:\n"
+            "python scripts/ingest_documents.py <document_path> <document_type>"
+        )
         sys.exit(1)
 
     file_path = sys.argv[1]
+    document_type = sys.argv[2]
 
     try:
-        ingest_document(file_path)
+        ingest_document(file_path, document_type)
     except Exception as exc:
         print(f"\nERROR: {exc}")
         sys.exit(1)

@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Any, Optional
 from app.prompts.rag_prompt import (
     SYSTEM_PROMPT,
@@ -66,17 +67,13 @@ class RAGService:
 
         question = question.strip()
 
-        # ---------------------------------------------
         # 1. Retrieve relevant chunks
-        # ---------------------------------------------
 
         retrieval_results = self.retriever.retrieve(
             question
         )
 
-        # ---------------------------------------------
         # 2. Handle empty retrieval
-        # ---------------------------------------------
 
         if not retrieval_results:
             return {
@@ -88,9 +85,7 @@ class RAGService:
                 "sources": [],
             }
 
-        # ---------------------------------------------
         # 3. Build context
-        # ---------------------------------------------
 
         built_context = self.context_builder.build(
             retrieval_results
@@ -106,9 +101,7 @@ class RAGService:
                 "sources": [],
             }
 
-        # ---------------------------------------------
         # 4. Build RAG prompt
-        # ---------------------------------------------
 
         if self.prompt_builder and hasattr(self.prompt_builder, "build"):
             user_prompt = self.prompt_builder.build(
@@ -121,9 +114,7 @@ class RAGService:
                 context=built_context.text,
             )
 
-        # ---------------------------------------------
         # 5. Generate LLM answer
-        # ---------------------------------------------
 
         raw_answer = self.llm_service.generate(
             system_prompt=SYSTEM_PROMPT,
@@ -153,11 +144,29 @@ class RAGService:
             "follow_up_questions": [],
         }
 
-        if not raw_answer:
+        if not raw_answer or not raw_answer.strip():
             return fallback
 
+        cleaned = raw_answer.strip()
+
+        # Remove Markdown code fences if the LLM adds them.
+        cleaned = re.sub(
+            r"^```(?:json)?\s*",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+
+        cleaned = re.sub(
+            r"\s*```$",
+            "",
+            cleaned,
+        )
+
+        cleaned = cleaned.strip()
+
         try:
-            parsed = json.loads(raw_answer)
+            parsed = json.loads(cleaned)
         except json.JSONDecodeError:
             return fallback
 
