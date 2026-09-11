@@ -1,13 +1,7 @@
 import axios from "axios";
 
-const API_BASE = "https://urban-pulse-r5jl.onrender.com/api/v1";
-const AI_BASE = `${API_BASE}/ai`;
+const AI_BASE = import.meta.env.VITE_AI_BASE_API;
 
-/*
- * ============================================
- * ASK URBANPULSE AI
- * ============================================
- */
 export const askChatbot = async (question) => {
   const response = await axios.post(`${AI_BASE}/ask`, {
     question,
