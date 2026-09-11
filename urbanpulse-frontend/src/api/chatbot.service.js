@@ -1,13 +1,11 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:8000/api/v1";
-const AI_BASE = `${API_BASE}/ai`;
+const AI_BASE = "https://urban-pulse-ct8w.onrender.com/api/v1/ai";
 
-/*
- * ============================================
- * ASK URBANPULSE AI
- * ============================================
- */
+// ============================================
+// ASK URBANPULSE AI
+// ============================================
+
 export const askChatbot = async (question) => {
   const response = await axios.post(`${AI_BASE}/ask`, {
     question,
