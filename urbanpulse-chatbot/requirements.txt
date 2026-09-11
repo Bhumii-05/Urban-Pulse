@@ -4,14 +4,11 @@ pydantic
 pydantic-settings
 python-dotenv
 python-multipart
-
 openai
 chromadb
-
 pytest
 pytest-asyncio
 httpx
-
 Pillow
-
 python-docx
+pypdf
