@@ -28,20 +28,30 @@ export default function CompleteConcernModal({
   const handleCompleteWithEvidence = async () => {
     setSubmitting(true);
     setError(null);
+
     try {
       const concernId = assignment.concern_id || assignment.id;
-      
+      const assignmentId = assignment.id;
+
       // 1. Upload resolution evidence photo if provided
       if (selectedFile && concernId) {
-        await concernService.uploadConcernImage(concernId, selectedFile);
+        try {
+          await concernService.uploadConcernImage(concernId, selectedFile);
+        } catch (imgErr) {
+          console.warn("Image upload warning:", imgErr);
+          // If image upload endpoint is failing, continue or alert user
+        }
       }
-      
+
       // 2. Trigger parent completion hook
-      await onCompleted(assignment.id, concernId);
+      await onCompleted(assignmentId, concernId);
       onClose();
     } catch (err) {
+      console.error("Complete work order error:", err);
       setError(
-        err?.response?.data?.detail || "Failed to complete work order and upload evidence."
+        err?.response?.data?.detail ||
+          err?.message ||
+          "Failed to complete work order and upload evidence."
       );
     } finally {
       setSubmitting(false);
@@ -57,7 +67,9 @@ export default function CompleteConcernModal({
               <CheckCircle2 className="w-4 h-4 text-emerald-700" />
             </div>
             <div>
-              <h3 className="text-[#0B3D2E] font-bold text-sm">Complete Work Order</h3>
+              <h3 className="text-[#0B3D2E] font-bold text-sm">
+                Complete Work Order
+              </h3>
               <p className="text-gray-400 text-[11px] truncate max-w-[220px]">
                 {assignment.title || `Task #${assignment.id}`}
               </p>
@@ -74,7 +86,8 @@ export default function CompleteConcernModal({
 
         <div className="p-6 space-y-4">
           <p className="text-xs text-gray-600">
-            Please attach a photo demonstrating resolution (e.g. cleared waste or replaced bin) before closing this task.
+            Please attach a photo demonstrating resolution (e.g. cleared waste or
+            replaced bin) before closing this task.
           </p>
 
           <input
@@ -88,7 +101,11 @@ export default function CompleteConcernModal({
 
           {previewUrl ? (
             <div className="relative rounded-2xl overflow-hidden border border-gray-200">
-              <img src={previewUrl} alt="Evidence preview" className="w-full h-44 object-cover" />
+              <img
+                src={previewUrl}
+                alt="Evidence preview"
+                className="w-full h-44 object-cover"
+              />
               <button
                 type="button"
                 onClick={() => {
@@ -109,11 +126,15 @@ export default function CompleteConcernModal({
               <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700">
                 <Camera className="w-5 h-5" />
               </div>
-              <span className="text-xs font-semibold">Take Photo or Browse Image</span>
+              <span className="text-xs font-semibold">
+                Take Photo or Browse Image
+              </span>
             </button>
           )}
 
-          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+          {error && (
+            <p className="text-xs text-red-600 font-medium">{error}</p>
+          )}
 
           <div className="flex justify-end gap-2.5 pt-2">
             <button

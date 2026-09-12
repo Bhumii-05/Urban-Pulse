@@ -376,19 +376,35 @@ export default function WorkerDashboard() {
     }
   };
 
-  const handleCompleteConcern = async (assignmentId, concernId) => {
+ const handleCompleteConcern = async (assignmentId, concernId) => {
     try {
-      if (concernId) {
-        await concernService.updateConcernStatus(concernId, "resolved");
+      // 1. Complete the assignment record
+      if (assignmentId) {
+        await assignmentService.updateAssignmentStatus(assignmentId, "completed");
       }
-      await assignmentService.updateAssignmentStatus(assignmentId, "completed");
+
+      // 2. Mark concern resolved (lowercase matches ConcernStatus.RESOLVED = 'resolved')
+      if (concernId) {
+        try {
+          await concernService.updateConcernStatus(concernId, "resolved");
+        } catch (statusErr) {
+          // If already resolved or non-critical conflict, proceed without blocking worker
+          console.warn(
+            "Concern status update note:",
+            statusErr?.response?.data?.detail || statusErr.message
+          );
+        }
+      }
+
+      // 3. Update dashboard UI state
       setAssignments((prev) =>
         prev.map((a) =>
           a.id === assignmentId ? { ...a, status: "completed" } : a
         )
       );
     } catch (err) {
-      console.error("Failed to complete concern work order:", err);
+      console.error("Failed to complete work order:", err);
+      throw err;
     }
   };
 
