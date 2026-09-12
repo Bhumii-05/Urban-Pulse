@@ -231,8 +231,9 @@ def update_concern_status(
 ):
     old_status = concern.status
 
+    # Idempotent handling: if already in target status, return existing concern
     if old_status == new_status:
-        return None
+        return concern
 
     concern.status = new_status
     concern.updated_at = datetime.now(timezone.utc)
@@ -244,7 +245,6 @@ def update_concern_status(
         new_status=new_status,
         remarks=remarks,
     )
-
     db.add(history)
 
     create_notification(
