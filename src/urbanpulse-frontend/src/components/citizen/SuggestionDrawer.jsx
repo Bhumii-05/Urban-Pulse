@@ -1,3 +1,10 @@
+﻿/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant, Sneha Kesharwani
+ * Date of Last Modification: 13 September 2026
+ * Brief Description: Provides the interface for submitting citizen suggestions with location details.
+ */
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Loader2, Navigation } from "lucide-react";
@@ -158,7 +165,7 @@ export default function SuggestionDrawer({
                   className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
                 >
                   <Navigation className={`h-3 w-3 ${locating ? "animate-spin" : ""}`} />
-                  {locating ? "Locating…" : "Use My Location"}
+                  {locating ? "Locatingâ€¦" : "Use My Location"}
                 </button>
               </div>
 
@@ -250,7 +257,7 @@ export default function SuggestionDrawer({
                 className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#005B4F] to-[#00473e] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:shadow-md disabled:opacity-60"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {submitting ? "Submitting…" : "Submit Suggestion"}
+                {submitting ? "Submittingâ€¦" : "Submit Suggestion"}
               </button>
             </form>
           </motion.div>
