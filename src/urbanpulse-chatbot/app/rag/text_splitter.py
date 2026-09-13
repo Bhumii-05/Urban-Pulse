@@ -1,7 +1,9 @@
 """
-text_splitter.py
-Splits document pages into smaller, overlapping chunks suitable for embeddings and retrieval.
-Includes comprehensive text cleaning to remove all PDF extraction artifacts including hollow bullets.
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Splits document pages into smaller, overlapping chunks suitable for embeddings and retrieval, while cleaning PDF extraction artifacts including hollow bullets.
 """
 
 import re

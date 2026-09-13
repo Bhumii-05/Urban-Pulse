@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Provides a service-layer interface for validating prompts and generating LLM responses through the configured LLM provider.
+"""
+
 from app.providers.llm_provider import LLMProvider
 
 

@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines the system instructions and prompt-building logic used to generate answers from retrieved municipal knowledge-base context.
+"""
+
 SYSTEM_PROMPT = """
 You are UrbanPulse AI, a municipal waste management assistant.
 

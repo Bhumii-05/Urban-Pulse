@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Analyzes citizen complaints with optional images, validates and parses AI responses, stores images, and persists complaint records through the repository.
+"""
+
 import json
 import re
 from typing import Any, Dict, Optional

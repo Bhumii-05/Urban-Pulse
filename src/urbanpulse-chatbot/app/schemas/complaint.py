@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines request and response schemas for complaint analysis, complaint persistence, complaint listing, and complaint status updates.
+"""
+
 from uuid import UUID
 
 from pydantic import BaseModel, Field

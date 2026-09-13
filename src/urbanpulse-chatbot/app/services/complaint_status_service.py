@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Enforces valid complaint status transitions and updates complaint status through the repository.
+"""
+
 from uuid import UUID
 
 from app.models.complaint import Complaint, ComplaintStatus

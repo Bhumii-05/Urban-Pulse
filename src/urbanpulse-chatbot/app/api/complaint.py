@@ -1,3 +1,10 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description:Provides an API endpoint for analyzing municipal complaints through the complaint service and converts service errors into appropriate HTTP responses.
+"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.schemas.complaint import ComplaintRequest, ComplaintResponse
 from app.services.complaint_service import ComplaintService

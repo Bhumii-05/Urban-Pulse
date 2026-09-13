@@ -1,3 +1,12 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines the abstract repository interface for creating, retrieving, listing, and updating persisted complaints.
+"""
+
+
 from abc import ABC, abstractmethod
 from uuid import UUID
 

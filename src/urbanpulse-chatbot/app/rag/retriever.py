@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Retrieves relevant knowledge chunks by expanding the user query, generating its embedding, and searching the configured vector store.
+"""
+
 from app.providers.embedding_provider import EmbeddingProvider
 from app.rag.models import RetrievalResult
 from app.rag.vector_store import VectorStore

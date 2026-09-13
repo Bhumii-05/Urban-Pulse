@@ -1,3 +1,10 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Provides the main AI question-answering endpoint using the Retrieval-Augmented Generation service and formats the generated answer, follow-up questions, and sources.
+"""
 import json
 
 from fastapi import APIRouter, Depends

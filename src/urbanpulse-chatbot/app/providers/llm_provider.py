@@ -1,3 +1,10 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines the abstract interface for language-model text generation and image-assisted text generation.
+"""
 from abc import ABC, abstractmethod
 
 

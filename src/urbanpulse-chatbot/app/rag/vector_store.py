@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines the vector-storage interface and provides a ChromaDB implementation for storing, searching, counting, deleting, and resetting embedded knowledge chunks.
+"""
+
 from abc import ABC, abstractmethod
 from pathlib import Path 
 from typing import List, Optional

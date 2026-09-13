@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Converts retrieved knowledge chunks into structured LLM context while preserving document and page source information.
+"""
+
 from app.rag.models import BuiltContext, RetrievalResult
 
 

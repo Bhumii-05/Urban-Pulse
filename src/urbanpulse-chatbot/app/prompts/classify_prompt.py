@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines the system prompt used to classify citizen messages by language, intent, waste category, and confidence.
+"""
+
 CLASSIFICATION_SYSTEM_PROMPT = """
 You are an AI assistant for a civic cleanliness reporting platform.
 

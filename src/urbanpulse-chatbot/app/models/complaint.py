@@ -1,3 +1,10 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines the complaint domain model and complaint lifecycle status values used to represent citizen complaints and their AI-generated analysis.
+"""
 from datetime import datetime, timezone
 from enum import Enum
 from uuid import UUID, uuid4

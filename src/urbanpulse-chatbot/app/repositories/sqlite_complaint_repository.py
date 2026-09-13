@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Implements complaint persistence using SQLite, including database initialization, complaint creation, retrieval, listing, row conversion, and status updates.
+"""
+
 import sqlite3
 from pathlib import Path
 from uuid import UUID
