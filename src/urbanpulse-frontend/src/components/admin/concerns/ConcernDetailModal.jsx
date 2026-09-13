@@ -1,3 +1,10 @@
+﻿/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant, Sneha Kesharwani
+ * Date of Last Modification: 13 September 2026
+ * Brief Description: Displays detailed information about a selected citizen concern.
+ */
 import React from "react";
 import { X, Image as ImageIcon, AlertTriangle } from "lucide-react";
 import { Modal, PriorityBadge } from "../../common/CommonUI";

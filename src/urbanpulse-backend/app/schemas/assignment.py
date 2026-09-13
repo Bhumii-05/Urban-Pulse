@@ -1,3 +1,10 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Bhumika A
+Date of Last Modification: 13 September 2026
+Brief Description: Defines request and response schemas for worker assignments.
+"""
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict

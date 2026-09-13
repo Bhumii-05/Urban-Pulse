@@ -1,3 +1,10 @@
+﻿/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant, Sneha Kesharwani
+ * Date of Last Modification: 13 September 2026
+ * Brief Description: Manages citizen concerns, assignments, statuses, and resolution workflows.
+ */
 import React, { useState, useEffect, useMemo } from "react";
 import {
   AlertTriangle,
@@ -36,11 +43,11 @@ function formatLocation(loc) {
   const coords = parseCoordinates(loc);
   if (coords)
     return coordsToLocationString(coords.lat.toFixed(4), coords.lng.toFixed(4));
-  return typeof loc === "string" ? loc : "—";
+  return typeof loc === "string" ? loc : "â€”";
 }
 
 function formatDate(dateString) {
-  if (!dateString) return "—";
+  if (!dateString) return "â€”";
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return String(dateString);

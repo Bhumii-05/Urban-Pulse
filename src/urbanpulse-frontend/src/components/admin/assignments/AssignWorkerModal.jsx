@@ -1,3 +1,10 @@
+﻿/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant, Sneha Kesharwani
+ * Date of Last Modification: 13 September 2026
+ * Brief Description: Provides a modal for assigning workers to concerns or tasks.
+ */
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { UserCheck, X, Send, Loader2, AlertCircle } from "lucide-react";

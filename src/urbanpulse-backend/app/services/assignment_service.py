@@ -1,5 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Bhumika A
+Date of Last Modification: 13 September 2026
+Brief Description: Implements business logic for creating, updating, and managing worker assignments.
+"""
 from datetime import datetime
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 

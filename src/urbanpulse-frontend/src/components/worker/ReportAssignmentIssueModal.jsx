@@ -1,3 +1,10 @@
+﻿/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant
+ * Date of Last Modification: 13 September 2026
+ * Brief Description: Provides a modal for workers to report issues with assigned tasks.
+ */
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, X, Send, Loader2 } from "lucide-react";

@@ -1,3 +1,10 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Bhumika A
+Date of Last Modification: 13 September 2026
+Brief Description: Defines the database model for worker assignments.
+"""
 from __future__ import annotations
 
 import enum

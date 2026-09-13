@@ -1,3 +1,10 @@
+﻿/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant, Sneha Kesharwani
+ * Date of Last Modification: 13 September 2026
+ * Brief Description: Provides the main dashboard interface for sanitation workers.
+ */
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Navigation,
@@ -99,7 +106,7 @@ function resolveStopLocation(stop, index, currentRoute) {
     return stop.address;
   }
 
-  return `${routeName} — Stop #${stop?.sequence_order ?? index + 1}`;
+  return `${routeName} - Stop #${stop?.sequence_order ?? index + 1}`;
 }
 
 function normalizeStop(stop, index, currentRoute) {
@@ -213,7 +220,7 @@ export default function WorkerDashboard() {
     }
   }, [selectedRoute]);
 
-  // 4. Fetch Assignments & Mask Coordinates (Change #1 included here)
+  // 4. Fetch Assignments & Mask Coordinates
   const loadAssignments = useCallback(async () => {
     setAssignmentsLoading(true);
     try {
@@ -257,7 +264,7 @@ export default function WorkerDashboard() {
           location: formatLocationText(rawLoc),
           coords: coords,
           status: (a.status || "pending").toLowerCase(),
-          issue_reason: a.issue_reason || null, // <- Passes issue_reason
+          issue_reason: a.issue_reason || null,
           date: a.created_at
             ? new Date(a.created_at).toLocaleDateString()
             : "Today",
@@ -368,58 +375,56 @@ export default function WorkerDashboard() {
   };
 
   const handleUpdateAssignmentStatus = async (assignmentId, nextStatus) => {
-  try {
-    await assignmentService.updateAssignmentStatus(assignmentId, nextStatus);
+    try {
+      await assignmentService.updateAssignmentStatus(assignmentId, nextStatus);
 
-    const targetAssignment = assignments.find((a) => a.id === assignmentId);
-    if (nextStatus === "in_progress" && targetAssignment?.concern_id) {
-      try {
-        await concernService.updateConcernStatus(targetAssignment.concern_id, "in_progress");
-      } catch (e) {
-        console.warn("Could not sync concern status to in_progress:", e);
+      const targetAssignment = assignments.find((a) => a.id === assignmentId);
+      if (nextStatus === "in_progress" && targetAssignment?.concern_id) {
+        try {
+          await concernService.updateConcernStatus(targetAssignment.concern_id, "in_progress");
+        } catch (e) {
+          console.warn("Could not sync concern status to in_progress:", e);
+        }
       }
+
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === assignmentId ? { ...a, status: nextStatus } : a
+        )
+      );
+    } catch (err) {
+      console.error("Failed to update assignment status:", err);
     }
+  };
 
-    setAssignments((prev) =>
-      prev.map((a) =>
-        a.id === assignmentId ? { ...a, status: nextStatus } : a
-      )
-    );
-  } catch (err) {
-    console.error("Failed to update assignment status:", err);
-  }
-};
-
-  // Change #2: Handler for reporting issues on assigned work orders
   const handleReportAssignmentIssue = async (assignmentId, reason) => {
-  try {
-    await assignmentService.updateAssignmentStatus(assignmentId, "cancelled", reason);
+    try {
+      await assignmentService.updateAssignmentStatus(assignmentId, "cancelled", reason);
 
-    const targetAssignment = assignments.find((a) => a.id === assignmentId);
-    if (targetAssignment?.concern_id) {
-      try {
-        // Revert concern to open status and log the worker's reason as remarks
-        await concernService.updateConcernStatus(
-          targetAssignment.concern_id,
-          "open",
-          `Worker reported issue: ${reason}`
-        );
-      } catch (cErr) {
-        console.warn("Could not update concern remarks:", cErr);
+      const targetAssignment = assignments.find((a) => a.id === assignmentId);
+      if (targetAssignment?.concern_id) {
+        try {
+          await concernService.updateConcernStatus(
+            targetAssignment.concern_id,
+            "open",
+            `Worker reported issue: ${reason}`
+          );
+        } catch (cErr) {
+          console.warn("Could not update concern remarks:", cErr);
+        }
       }
-    }
 
-    setAssignments((prev) =>
-      prev.map((a) =>
-        a.id === assignmentId
-          ? { ...a, status: "cancelled", issue_reason: reason }
-          : a
-      )
-    );
-  } catch (err) {
-    console.error("Failed to report issue for assignment:", err);
-  }
-};
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === assignmentId
+            ? { ...a, status: "cancelled", issue_reason: reason }
+            : a
+        )
+      );
+    } catch (err) {
+      console.error("Failed to report issue for assignment:", err);
+    }
+  };
 
   const handleCompleteConcern = async (assignmentId, concernId) => {
     try {
@@ -494,7 +499,7 @@ export default function WorkerDashboard() {
               <div className="rounded-3xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-xl p-12 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
                 <p className="text-xs font-semibold text-gray-600">
-                  Loading assigned collection routes…
+                  Loading assigned collection routes...
                 </p>
               </div>
             ) : routeError ? (
@@ -559,7 +564,6 @@ export default function WorkerDashboard() {
           </>
         )}
 
-        {/* Change #3: Passing onReportIssue to WorkerAssignmentsView */}
         {activeTab === "concerns" && (
           <WorkerAssignmentsView
             assignments={assignments}

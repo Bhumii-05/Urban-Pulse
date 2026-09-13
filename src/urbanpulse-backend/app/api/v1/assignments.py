@@ -1,3 +1,10 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Bhumika A
+Date of Last Modification: 13 September 2026
+Brief Description: Provides API endpoints for managing worker assignments and assignment status.
+"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 

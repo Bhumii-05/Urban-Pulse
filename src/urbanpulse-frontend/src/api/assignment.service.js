@@ -1,3 +1,11 @@
+/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant
+ * Date of Last Modification: 13 September 2026
+ * Brief Description:Handles API requests for worker assignments and assignment status.
+ */
+
 import api from './axios';
 
 export const assignmentService = {

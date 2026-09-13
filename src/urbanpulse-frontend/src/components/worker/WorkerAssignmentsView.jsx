@@ -1,3 +1,10 @@
+﻿/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant
+ * Date of Last Modification: 13 September 2026
+ * Brief Description: Displays and manages assignments allocated to sanitation workers.
+ */
 import React, { useState } from "react";
 import {
   ClipboardList,
