@@ -43,11 +43,11 @@ function formatLocation(loc) {
   const coords = parseCoordinates(loc);
   if (coords)
     return coordsToLocationString(coords.lat.toFixed(4), coords.lng.toFixed(4));
-  return typeof loc === "string" ? loc : "â€”";
+  return typeof loc === "string" ? loc : "-";
 }
 
 function formatDate(dateString) {
-  if (!dateString) return "â€”";
+  if (!dateString) return "-";
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return String(dateString);
@@ -97,12 +97,14 @@ export default function ConcernManagement({
           ? assignRes.value
           : assignRes.value?.assignments || [];
 
-        // Keep the newest assignment for each concern_id (highest id or first in list)
+        // Build a robust string-keyed map for safe lookups
         const map = {};
         rawAssn.forEach((a) => {
-          if (a.concern_id) {
-            if (!map[a.concern_id] || a.id > map[a.concern_id].id) {
-              map[a.concern_id] = a;
+          const concernId = a.concern_id != null ? String(a.concern_id) : null;
+          if (concernId) {
+            const currentHighest = map[concernId];
+            if (!currentHighest || Number(a.id) > Number(currentHighest.id)) {
+              map[concernId] = a;
             }
           }
         });
@@ -271,14 +273,15 @@ export default function ConcernManagement({
                 const isResolved =
                   (c.status || "").toLowerCase() === "resolved";
                 const locationDisplay = formatLocation(c.location);
-                const latestAssignment = assignmentsMap[c.id];
+                
+                // Lookup using string casting to prevent integer/string index mismatches
+                const latestAssignment = assignmentsMap[String(c.id)];
 
-                // Once resolved, any old cancellation issue is dismissed
+                const assignStatus = String(latestAssignment?.status || "").toLowerCase();
                 const hasAssignmentIssue =
                   !isResolved &&
                   latestAssignment &&
-                  latestAssignment.status?.toLowerCase() === "cancelled" &&
-                  latestAssignment.issue_reason;
+                  assignStatus === "cancelled";
 
                 return (
                   <tr
@@ -345,10 +348,14 @@ export default function ConcernManagement({
                                 type: "concern",
                               })
                             }
-                            className="flex items-center gap-1 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors"
+                            className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors border ${
+                              hasAssignmentIssue
+                                ? "text-amber-800 bg-amber-50 border-amber-300 hover:bg-amber-100"
+                                : "text-emerald-800 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
+                            }`}
                             title="Dispatch this concern to a worker"
                           >
-                            <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
+                            <UserCheck className={`w-3.5 h-3.5 ${hasAssignmentIssue ? "text-amber-700" : "text-emerald-700"}`} />
                             {hasAssignmentIssue ? "Reassign" : "Assign"}
                           </button>
                         )}
@@ -406,7 +413,7 @@ export default function ConcernManagement({
       {viewConcern && (
         <ConcernDetailModal
           concern={viewConcern}
-          latestAssignment={assignmentsMap[viewConcern.id]}
+          latestAssignment={assignmentsMap[String(viewConcern.id)]}
           images={concernImages}
           loadingImages={loadingImages}
           onClose={() => setViewConcern(null)}
