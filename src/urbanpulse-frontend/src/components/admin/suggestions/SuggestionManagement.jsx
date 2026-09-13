@@ -1,3 +1,10 @@
+﻿/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant, Sneha Kesharwani
+ * Date of Last Modification: 13 September 2026
+ * Brief Description: Allows administrators to review, respond to, and manage citizen suggestions.
+ */
 import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -325,7 +332,7 @@ export default function SuggestionManagement({ fireToast, onImportToRoute }) {
                 <div className="flex items-center gap-2 text-[11px] text-gray-500 bg-gray-50 p-2 rounded-xl mb-4 font-mono">
                   <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                   <span>
-                    Lat: {coords.lat || "—"}, Lng: {coords.lng || "—"}
+                    Lat: {coords.lat || "â€”"}, Lng: {coords.lng || "â€”"}
                   </span>
                 </div>
               </div>
