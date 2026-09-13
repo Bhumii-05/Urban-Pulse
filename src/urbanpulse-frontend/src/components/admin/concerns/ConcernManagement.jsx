@@ -2,7 +2,7 @@
  * Project Name: UrbanPulse
  * Group Name: Vision Crafters
  * Author(s): Ashish Pant, Sneha Kesharwani
- * Date of Last Modification: 13 September 2026
+ * Date of Last Modification: 14 September 2026
  * Brief Description: Manages citizen concerns, assignments, statuses, and resolution workflows.
  */
 import React, { useState, useEffect, useMemo } from "react";
@@ -97,14 +97,12 @@ export default function ConcernManagement({
           ? assignRes.value
           : assignRes.value?.assignments || [];
 
-        // Build a robust string-keyed map for safe lookups
         const map = {};
         rawAssn.forEach((a) => {
-          const concernId = a.concern_id != null ? String(a.concern_id) : null;
-          if (concernId) {
-            const currentHighest = map[concernId];
-            if (!currentHighest || Number(a.id) > Number(currentHighest.id)) {
-              map[concernId] = a;
+          const cId = a.concern_id != null ? String(a.concern_id) : null;
+          if (cId) {
+            if (!map[cId] || Number(a.id) > Number(map[cId].id)) {
+              map[cId] = a;
             }
           }
         });
@@ -273,15 +271,13 @@ export default function ConcernManagement({
                 const isResolved =
                   (c.status || "").toLowerCase() === "resolved";
                 const locationDisplay = formatLocation(c.location);
-                
-                // Lookup using string casting to prevent integer/string index mismatches
                 const latestAssignment = assignmentsMap[String(c.id)];
 
-                const assignStatus = String(latestAssignment?.status || "").toLowerCase();
+                const assignStatus = String(
+                  latestAssignment?.status || ""
+                ).toLowerCase();
                 const hasAssignmentIssue =
-                  !isResolved &&
-                  latestAssignment &&
-                  assignStatus === "cancelled";
+                  !isResolved && assignStatus === "cancelled";
 
                 return (
                   <tr
@@ -355,7 +351,13 @@ export default function ConcernManagement({
                             }`}
                             title="Dispatch this concern to a worker"
                           >
-                            <UserCheck className={`w-3.5 h-3.5 ${hasAssignmentIssue ? "text-amber-700" : "text-emerald-700"}`} />
+                            <UserCheck
+                              className={`w-3.5 h-3.5 ${
+                                hasAssignmentIssue
+                                  ? "text-amber-700"
+                                  : "text-emerald-700"
+                              }`}
+                            />
                             {hasAssignmentIssue ? "Reassign" : "Assign"}
                           </button>
                         )}
@@ -409,7 +411,7 @@ export default function ConcernManagement({
         </div>
       </div>
 
-      {/* Concern Detail Modal */}
+      {/* Dedicated Concern Detail Modal */}
       {viewConcern && (
         <ConcernDetailModal
           concern={viewConcern}
@@ -418,6 +420,10 @@ export default function ConcernManagement({
           loadingImages={loadingImages}
           onClose={() => setViewConcern(null)}
           onResolve={(id) => updateConcernStatus(id, "Resolved")}
+          onReassign={(item) => {
+            setViewConcern(null);
+            setAssignItem(item);
+          }}
           formatLocation={formatLocation}
           formatDate={formatDate}
         />

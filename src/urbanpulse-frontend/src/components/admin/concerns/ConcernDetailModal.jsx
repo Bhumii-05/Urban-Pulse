@@ -2,7 +2,7 @@
  * Project Name: UrbanPulse
  * Group Name: Vision Crafters
  * Author(s): Ashish Pant, Sneha Kesharwani
- * Date of Last Modification: 13 September 2026
+ * Date of Last Modification: 14 September 2026
  * Brief Description: Displays detailed information about a selected citizen concern.
  */
 import React from "react";
@@ -17,19 +17,26 @@ export default function ConcernDetailModal({
   loadingImages,
   onClose,
   onResolve,
+  onReassign,
   formatLocation,
   formatDate,
 }) {
   if (!concern) return null;
 
   const isResolved = (concern.status || "").toLowerCase() === "resolved";
+  const assignStatus = String(latestAssignment?.status || "").toLowerCase();
 
-  // Only consider an issue active if the concern is NOT yet resolved
+  // Active if assignment was cancelled and concern is not yet resolved
   const hasAssignmentIssue =
     !isResolved &&
-    latestAssignment &&
-    latestAssignment.status?.toLowerCase() === "cancelled" &&
-    latestAssignment.issue_reason;
+    (assignStatus === "cancelled" || Boolean(latestAssignment?.issue_reason));
+
+  const issueReasonText =
+    latestAssignment?.issue_reason ||
+    latestAssignment?.reason ||
+    latestAssignment?.remarks ||
+    concern.remarks ||
+    "Worker reported an obstacle or access issue preventing collection.";
 
   const displayStatus = isResolved
     ? "Resolved"
@@ -43,10 +50,16 @@ export default function ConcernDetailModal({
         <div>
           <span className="text-xs font-mono text-gray-400">#{concern.id}</span>
           <h2 className="text-lg font-bold text-[#0B3D2E]">
-            {getCategoryLabel(concern.category) || concern.title || `Concern #${concern.id}`}
+            {getCategoryLabel(concern.category) ||
+              concern.title ||
+              `Concern #${concern.id}`}
           </h2>
         </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-full p-1">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 rounded-full p-1 transition"
+        >
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -77,13 +90,13 @@ export default function ConcernDetailModal({
 
         {/* Worker Issue Reason Box: Hides once resolved */}
         {hasAssignmentIssue && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-xl space-y-1">
-            <div className="flex items-center gap-1.5 text-red-800 font-semibold text-xs">
+          <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl space-y-1 shadow-xs">
+            <div className="flex items-center gap-1.5 text-red-800 font-bold text-xs">
               <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
               <span>Worker Non-Completion Report</span>
             </div>
-            <p className="text-[11px] text-red-700 leading-relaxed">
-              <strong>Reason:</strong> {latestAssignment.issue_reason}
+            <p className="text-[11px] text-red-700 leading-relaxed pl-5">
+              <strong>Reason:</strong> {issueReasonText}
             </p>
           </div>
         )}
@@ -95,7 +108,9 @@ export default function ConcernDetailModal({
 
         <p className="text-gray-600">
           <strong className="text-gray-800 font-sans">Reported Date:</strong>{" "}
-          {formatDate(concern.reported_date || concern.created_at || concern.date)}
+          {formatDate(
+            concern.reported_date || concern.created_at || concern.date
+          )}
         </p>
 
         {concern.description && (
@@ -115,7 +130,10 @@ export default function ConcernDetailModal({
         ) : images.length > 0 ? (
           <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
             {images.map((img, idx) => {
-              const imageUrl = typeof img === "string" ? img : img.image_url || img.url || img.file_path;
+              const imageUrl =
+                typeof img === "string"
+                  ? img
+                  : img.image_url || img.url || img.file_path;
               return (
                 <img
                   key={img.id || idx}
@@ -124,7 +142,8 @@ export default function ConcernDetailModal({
                   className="w-full h-28 object-cover rounded-xl border border-gray-200"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = "https://via.placeholder.com/150?text=Image+Unavailable";
+                    e.target.src =
+                      "https://via.placeholder.com/150?text=Image+Unavailable";
                   }}
                 />
               );
@@ -137,14 +156,36 @@ export default function ConcernDetailModal({
 
       <div className="flex items-center gap-2">
         {!isResolved && (
-          <button
-            onClick={() => onResolve(concern.id)}
-            className="flex-1 py-2 bg-emerald-600 text-white font-medium text-xs rounded-xl hover:bg-emerald-700 transition"
-          >
-            Mark as Resolved
-          </button>
+          <>
+            {onReassign && (
+              <button
+                type="button"
+                onClick={() =>
+                  onReassign({
+                    id: concern.id,
+                    title:
+                      getCategoryLabel(concern.category) ||
+                      `Concern #${concern.id}`,
+                    location: formatLocation(concern.location),
+                    type: "concern",
+                  })
+                }
+                className="flex-1 py-2 bg-amber-50 border border-amber-300 text-amber-800 font-semibold text-xs rounded-xl hover:bg-amber-100 transition"
+              >
+                {hasAssignmentIssue ? "Reassign Worker" : "Assign Worker"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => onResolve(concern.id)}
+              className="flex-1 py-2 bg-emerald-600 text-white font-semibold text-xs rounded-xl hover:bg-emerald-700 transition"
+            >
+              Mark as Resolved
+            </button>
+          </>
         )}
         <button
+          type="button"
           onClick={onClose}
           className="flex-1 py-2 bg-gray-100 text-gray-600 font-medium text-xs rounded-xl hover:bg-gray-200 transition"
         >
