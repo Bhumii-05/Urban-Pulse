@@ -1,3 +1,30 @@
+# Project Declaration
+
+## 2. Project Identification & Declaration
+
+### Project Information
+
+| Item | Required Information |
+|---|---|
+| **Project Title** | UrbanPulse |
+| **Group Name** | `<Vision Crafters>` |
+| **Team Members** | `<Ashish Pant>`, `<Bhumika A>`, `<Himanshu Bisht>`,`<Sneha Kesharwani>`,`<Himani Zade>` |
+| **Email IDs** | `<ashishpant545@gmail.com>`,`<bhumika.arun05@gmail.com>`,`<himanshubisht3231@gmail.com>`, `<snehakesharwani05@gmail.com>`, `<himahizade3105@gmail.com>` |
+| **Project Duration** | `<01 August 2026> – <15 September 2026>` |
+| **Internship Batch** | Summer Internship Program – 2026 |
+
+### Declaration of Original Work and Intellectual Property Transfer
+
+I/We hereby declare that this project is an original work undertaken as part of the **Summer Internship Program – 2026 at JSL Works Pvt Ltd.**
+
+By submitting this report, documentation, source code, designs, datasets, presentations, and all associated materials, I/We confirm that the work has been completed by our team unless otherwise acknowledged.
+
+Furthermore, I/We voluntarily assign and transfer all applicable intellectual property rights, ownership, usage rights, modification rights, and implementation rights associated with this project to **JSL Works Pvt Ltd.**
+
+I/We understand and acknowledge that the company may use, reproduce, modify, integrate, distribute, enhance, or commercialize any submitted material for future internal or external projects without limitation, unless otherwise agreed in writing.
+
+---
+
 # 🏙️ UrbanPulse — Smart Waste Management Platform
 
 UrbanPulse is a full-stack, GIS-enabled smart municipal waste management ecosystem that coordinates **Citizens**, **Sanitation Workers**, and **Municipal Administrators** through automated workflows, spatial tracking, role-based controls, and AI-powered assistance.
@@ -7,46 +34,49 @@ UrbanPulse is a full-stack, GIS-enabled smart municipal waste management ecosyst
 ## 📸 Interface Previews
 
 ### Landing Page & Live Impact
-![Home Page](/screenshots/HomePage.png)
+![Home Page](/assets/HomePage.png)
 
 <p align="center">
-  <img src="screenshots/LiveMetrics.png" width="49%" alt="Live Metrics" />
-  <img src="screenshots/Features.png" width="49%" alt="Features Overview" />
+  <img src="assets/AboutUs1.png" width="49%" alt="About Us" />
+  <img src="assets/AboutUs2.png" width="49%" alt="Contact Us" />
 </p>
-
 <p align="center">
-  <img src="screenshots/AboutUs.png" width="49%" alt="About Us" />
-  <img src="screenshots/ContactUs.png" width="49%" alt="Contact Us" />
+  <img src="assets/LiveMetrics.png" width="49%" alt="Live Metrics" />
+  <img src="assets/ContactUs.png" width="49%" alt="Features Overview" />
 </p>
-
 ### Citizen Experience
 <p align="center">
-  <img src="screenshots/CitizenDashhboard.png" width="49%" alt="Citizen Dashboard" />
-  <img src="screenshots/ReportConcernForm.png" width="49%" alt="Report Concern Modal" />
+  <img src="assets/CitizenDashhboard.png" width="49%" alt="Citizen Dashboard" />
+  <img src="assets/ReportConcernForm.png" width="49%" alt="Report Concern Modal" />
 </p>
+
 <p align="center">
-  <img src="screenshots/SuggestionSidebar.png" width="49%" alt="Citizen Suggestion Sidebar" />
-  <img src="screenshots/ProfilePage.png" width="49%" alt="Profile Page" />
+  <img src="assets/SuggestionSidebar.png" width="49%" alt="Citizen Suggestion Sidebar" />
+  <img src="assets/UserSuggestionHistory.png" width="49%" alt="Profile Page" />
 </p>
 
 ### Sanitation Worker Workspace
 <p align="center">
-  <img src="screenshots/WorkerDashboard.png" width="49%" alt="Worker Dashboard" />
-  <img src="screenshots/WorkerMap.png" width="49%" alt="Worker Route Map" />
+  <img src="assets/WorkerDashboard.png" width="49%" alt="Worker Dashboard" />
+  <img src="assets/WorkerMap.png" width="49%" alt="Worker Route Map" />
 </p>
+
 <p align="center">
-  <img src="screenshots/WorkerAssignmentSection.png" width="85%" alt="Worker Assignments" />
+  <img src="assets/WorkerAssignmentSection.png" width="49%" alt="Worker Assignments" />
+  <img src="assets/WorkerAssignmentSection2.png" width="49%" alt="Worker Assignments" />
 </p>
 
 ### Municipal Administrator Control Center
-![Admin Dashboard](screenshots/AdminDashboard.png)
+![Admin Dashboard](assets/AdminDashboard.png)
 
 <p align="center">
-  <img src="screenshots/ConcernSection.png" width="49%" alt="Concern Management" />
-  <img src="screenshots/RouteSection.png" width="49%" alt="Route Management" />
+  <img src="assets/ConcernSection.png" width="49%" alt="Concern Management" />
+  <img src="assets/RouteSection.png" width="49%" alt="Route Management" />
 </p>
+
 <p align="center">
-  <img src="screenshots/WasteBinManagementSection.png" width="85%" alt="Waste Bin Management" />
+  <img src="assets/AdminSuggestionSection.png" width="49%" alt="Waste Bin Management" />
+  <img src="assets/WasteBinManagementSection.png" width="49%" alt="Waste Bin Management" />
 </p>
 
 ---

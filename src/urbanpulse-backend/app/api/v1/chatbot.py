@@ -1,0 +1,56 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Bhumika A, Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Provides API endpoints for interacting with the UrbanPulse chatbot service.
+"""
+from fastapi import APIRouter, HTTPException
+
+from app.schemas.chatbot import (
+    ChatbotAskRequest,
+    ChatbotAskResponse,
+)
+from app.services.chatbot_service import ChatbotService
+
+
+router = APIRouter(
+    prefix="/chatbot",
+    tags=["Chatbot"],
+)
+
+
+@router.post(
+    "/ask",
+    response_model=ChatbotAskResponse,
+    operation_id="chatbot_ask",
+)
+def ask_chatbot(
+    request: ChatbotAskRequest,
+) -> ChatbotAskResponse:
+    """
+    Forward a user's question to the UrbanPulse
+    chatbot AI service.
+    """
+
+    service = ChatbotService()
+
+    try:
+        result = service.ask(request.question)
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
+
+    return ChatbotAskResponse(
+        answer=result["answer"],
+        sources=result["sources"],
+    )
