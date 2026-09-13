@@ -84,7 +84,7 @@ export default function UserManagement({ fireToast }) {
           u.is_active === false || u.status === "Inactive"
             ? "Inactive"
             : "Active",
-        phone: u.phone_number || u.phone || "â€”",
+        phone: u.phone_number || u.phone || "-",
       }));
 
       setUsers(normalized);
@@ -148,44 +148,42 @@ export default function UserManagement({ fireToast }) {
   };
 
   const handleConfirmDeactivate = async () => {
-  if (!deactivateUser) return;
+    if (!deactivateUser) return;
 
-  // If currently "Active", the next state should be false (inactive)
-  const nextIsActive = deactivateUser.status !== "Active";
-  const nextStatus = nextIsActive ? "Active" : "Inactive";
+    const nextIsActive = deactivateUser.status !== "Active";
+    const nextStatus = nextIsActive ? "Active" : "Inactive";
 
-  try {
-    await userService.toggleUserStatus(deactivateUser.id, nextIsActive);
+    try {
+      await userService.toggleUserStatus(deactivateUser.id, nextIsActive);
 
-    // Update state in user table
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === deactivateUser.id ? { ...u, status: nextStatus } : u
-      )
-    );
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === deactivateUser.id ? { ...u, status: nextStatus } : u
+        )
+      );
 
-    if (viewUser && viewUser.id === deactivateUser.id) {
-      setViewUser((v) => ({ ...v, status: nextStatus }));
+      if (viewUser && viewUser.id === deactivateUser.id) {
+        setViewUser((v) => ({ ...v, status: nextStatus }));
+      }
+
+      if (fireToast) {
+        fireToast(`${deactivateUser.name} is now ${nextStatus.toLowerCase()}`);
+      }
+
+      setDeactivateUser(null);
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      const errorMsg = Array.isArray(detail)
+        ? detail[0]?.msg || "Validation error"
+        : typeof detail === "string"
+        ? detail
+        : "Failed to update user status";
+
+      if (fireToast) {
+        fireToast(errorMsg);
+      }
     }
-
-    if (fireToast) {
-      fireToast(`${deactivateUser.name} is now ${nextStatus.toLowerCase()}`);
-    }
-
-    setDeactivateUser(null);
-  } catch (err) {
-    const detail = err.response?.data?.detail;
-    const errorMsg = Array.isArray(detail)
-      ? detail[0]?.msg || "Validation error"
-      : typeof detail === "string"
-      ? detail
-      : "Failed to update user status";
-
-    if (fireToast) {
-      fireToast(errorMsg);
-    }
-  }
-};
+  };
 
   const handleConfirmDelete = async () => {
     try {
@@ -221,7 +219,7 @@ export default function UserManagement({ fireToast }) {
         email: created.email || createForm.email.trim(),
         role: createForm.role,
         status: "Active",
-        phone: created.phone_number || createForm.phone.trim() || "â€”",
+        phone: created.phone_number || createForm.phone.trim() || "-",
       };
 
       setUsers((prev) => [newUser, ...prev]);
@@ -405,7 +403,7 @@ export default function UserManagement({ fireToast }) {
                     <StatusPill status={u.status} />
                   </td>
 
-                  {/* Actions (Fixed Width Column & Centered Locked Buttons) */}
+                  {/* Actions */}
                   <td className="w-[340px] min-w-[340px] px-5 py-4 whitespace-nowrap">
                     <div className="flex items-center justify-center gap-2">
                       {/* View */}
@@ -434,7 +432,7 @@ export default function UserManagement({ fireToast }) {
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </button>
 
-                      {/* Activate / Deactivate (Fixed width w-[104px] prevents jumping) */}
+                      {/* Activate / Deactivate */}
                       <button
                         type="button"
                         onClick={() => setDeactivateUser(u)}
@@ -478,6 +476,7 @@ export default function UserManagement({ fireToast }) {
           </table>
         </div>
       </div>
+
       {/* Pagination Controls */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-1">
         <p className="text-xs text-gray-400">
@@ -490,15 +489,17 @@ export default function UserManagement({ fireToast }) {
         </p>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
           >
-            â€¹
+            ‹
           </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <button
               key={p}
+              type="button"
               onClick={() => setCurrentPage(p)}
               className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                 p === currentPage
@@ -510,11 +511,12 @@ export default function UserManagement({ fireToast }) {
             </button>
           ))}
           <button
+            type="button"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 text-sm disabled:opacity-40 hover:bg-gray-50 transition-colors"
           >
-            â€º
+            ›
           </button>
         </div>
       </div>
@@ -526,6 +528,7 @@ export default function UserManagement({ fireToast }) {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-[#0B3D2E]">User Details</h2>
               <button
+                type="button"
                 onClick={() => setViewUser(null)}
                 className="text-gray-400 hover:text-gray-600 rounded-full p-1.5"
               >
@@ -579,6 +582,7 @@ export default function UserManagement({ fireToast }) {
 
             <div className="flex flex-col gap-2">
               <button
+                type="button"
                 onClick={() => {
                   setEditUser(viewUser);
                   setEditForm({
@@ -594,6 +598,7 @@ export default function UserManagement({ fireToast }) {
                 Edit Details
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setDeactivateUser(viewUser);
                   setViewUser(null);
@@ -603,6 +608,7 @@ export default function UserManagement({ fireToast }) {
                 {viewUser.status === "Active" ? "Deactivate" : "Activate"}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setDeleteUser(viewUser);
                   setViewUser(null);
@@ -616,14 +622,14 @@ export default function UserManagement({ fireToast }) {
         )}
       </Modal>
 
-      {/* Edit User Drawer - Only render when editUser is not null */}
-
+      {/* Edit User Modal */}
       <Modal open={Boolean(editUser)} onClose={() => setEditUser(null)}>
         {editUser && (
           <div>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-[#0B3D2E]">Edit User</h2>
               <button
+                type="button"
                 onClick={() => setEditUser(null)}
                 className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1.5 transition-colors"
               >
@@ -681,12 +687,14 @@ export default function UserManagement({ fireToast }) {
 
             <div className="flex items-center gap-3 mt-7">
               <button
+                type="button"
                 onClick={() => setEditUser(null)}
                 className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleSaveEdit}
                 className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
               >
@@ -702,6 +710,7 @@ export default function UserManagement({ fireToast }) {
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-[#0B3D2E]">Create User</h2>
           <button
+            type="button"
             onClick={() => setShowCreate(false)}
             className="text-gray-400 hover:text-gray-600 rounded-full p-1.5 transition-colors"
           >
@@ -770,6 +779,7 @@ export default function UserManagement({ fireToast }) {
           </Field>
         </div>
         <button
+          type="button"
           onClick={handleSubmitCreate}
           className="w-full mt-7 py-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-sm font-semibold hover:from-emerald-600 hover:to-emerald-800 transition-all"
         >
@@ -818,12 +828,14 @@ export default function UserManagement({ fireToast }) {
             </div>
             <div className="flex items-center gap-3 mt-7">
               <button
+                type="button"
                 onClick={() => setDeactivateUser(null)}
                 className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleConfirmDeactivate}
                 className={`flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors ${
                   deactivateUser.status === "Active"
@@ -851,6 +863,7 @@ export default function UserManagement({ fireToast }) {
                 Delete User Account?
               </h2>
               <button
+                type="button"
                 onClick={() => setDeleteUser(null)}
                 className="text-gray-400 hover:text-gray-600 absolute right-6 top-6"
               >
@@ -869,12 +882,14 @@ export default function UserManagement({ fireToast }) {
             </p>
             <div className="flex items-center gap-3">
               <button
+                type="button"
                 onClick={handleConfirmDelete}
                 className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
               >
                 Confirm Delete
               </button>
               <button
+                type="button"
                 onClick={() => setDeleteUser(null)}
                 className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors"
               >
@@ -887,4 +902,3 @@ export default function UserManagement({ fireToast }) {
     </div>
   );
 }
-
