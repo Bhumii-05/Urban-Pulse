@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Implements LLM and embedding provider interfaces using OpenAI for text generation, image-assisted generation, and vector embedding generation.
+"""
+
 import base64
 
 from openai import OpenAI

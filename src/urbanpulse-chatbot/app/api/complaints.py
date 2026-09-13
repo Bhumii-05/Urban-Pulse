@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Provides API endpoints for creating, listing, retrieving, and updating the status of persisted citizen complaints, including optional image uploads.
+"""
+
 from typing import Optional
 from uuid import UUID
 

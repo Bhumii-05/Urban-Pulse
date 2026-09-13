@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Expands common resident waste-management terminology with related terms to improve semantic retrieval from the municipal knowledge base.
+"""
+
 from __future__ import annotations
 
 import re

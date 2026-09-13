@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines Pydantic data models representing document pages, knowledge chunks, embedded chunks, retrieval results, built context, and RAG responses.
+"""
+
 from pydantic import BaseModel, Field
 
 

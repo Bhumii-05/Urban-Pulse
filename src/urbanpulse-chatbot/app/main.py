@@ -1,3 +1,10 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Initializes the FastAPI application, configures CORS, registers exception handlers and API routers, and provides root and health-check endpoints.
+"""
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse

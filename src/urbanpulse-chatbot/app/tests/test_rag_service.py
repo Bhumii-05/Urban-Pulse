@@ -1,3 +1,12 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Tests the end-to-end RAG service pipeline using OpenAI, ChromaDB, retrieval, context construction, prompt generation, and LLM response generation.
+"""
+
+
 from dotenv import load_dotenv
 
 from app.prompts.rag_prompt import RAGPromptBuilder

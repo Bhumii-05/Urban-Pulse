@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines the system prompt and prompt-building logic used to analyze municipal complaints and produce structured complaint assessments.
+"""
+
 SYSTEM_PROMPT = """
 You are a municipal complaint analysis assistant.
 

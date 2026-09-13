@@ -1,12 +1,9 @@
 """
-json_parser.py
-
-Utility functions for parsing JSON returned by LLMs.
-
-Responsibilities:
-- Remove Markdown code fences.
-- Extract JSON objects from text.
-- Convert JSON strings into Python dictionaries.
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Provides utility functions for parsing JSON responses returned by LLMs, including removing Markdown code fences, extracting JSON objects, and converting JSON strings into Python dictionaries.
 """
 
 import json

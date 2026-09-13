@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines FastAPI dependency factories for configuring classifiers, repositories, image storage, embedding providers, vector stores, retrieval components, LLM services, and RAG services.
+"""
+
 from typing import Annotated
 from fastapi import Depends, FastAPI
 

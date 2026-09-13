@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Loads PDF, TXT, and DOCX knowledge documents and extracts their content into page-level document objects.
+"""
+
 from pathlib import Path
 
 from docx import Document

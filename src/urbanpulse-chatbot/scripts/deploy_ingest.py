@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Runs deployment-time ingestion for the configured municipal knowledge documents and loads them into the UrbanPulse RAG knowledge base.
+"""
+
 from pathlib import Path
 
 from ingest_documents import ingest_document

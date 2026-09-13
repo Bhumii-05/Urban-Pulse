@@ -1,3 +1,12 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines the abstract interface for persistent image storage operations including saving, deleting, and checking stored images.
+"""
+
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 from uuid import UUID

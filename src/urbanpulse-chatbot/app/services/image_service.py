@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Validates uploaded images, checks MIME type and file size, verifies image integrity and format, and prepares image data for AI vision processing.
+"""
+
 import base64
 from io import BytesIO
 

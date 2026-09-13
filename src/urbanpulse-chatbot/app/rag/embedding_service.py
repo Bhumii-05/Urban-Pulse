@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Generates embeddings for individual text strings and RAG chunks through the configured embedding provider.
+"""
+
 from app.providers.embedding_provider import EmbeddingProvider
 from app.rag.models import Chunk, EmbeddedChunk
 

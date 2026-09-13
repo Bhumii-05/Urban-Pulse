@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines request and response schemas for citizen-message classification, including language, intent, category, and confidence.
+"""
+
 from pydantic import BaseModel, Field
 
 class ClassifyRequest(BaseModel):

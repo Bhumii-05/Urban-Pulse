@@ -1,3 +1,10 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Defines application configuration settings for API operation, OpenAI models, embedding configuration, debugging, environment selection, and environment-variable loading.
+"""
 from typing import Optional
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings

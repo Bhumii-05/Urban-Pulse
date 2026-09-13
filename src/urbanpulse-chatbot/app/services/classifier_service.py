@@ -1,3 +1,11 @@
+"""
+Project Name: UrbanPulse
+Group Name: Vision Crafters
+Author(s): Himanshu Bisht
+Date of Last Modification: 13 September 2026
+Brief Description: Implements business logic for classifying citizen messages through an LLM provider and safely handling validation, parsing, and fallback responses.
+"""
+
 from pydantic import ValidationError
 
 from app.core.exceptions import JSONParsingError
