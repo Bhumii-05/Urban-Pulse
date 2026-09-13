@@ -127,7 +127,7 @@ export default function ContactUs() {
                   </div>
                   <div>
                     <p className="text-xs text-white/60">Response Time</p>
-                    <p className="text-sm font-semibold">Within 24 â€“ 48 Hours</p>
+                    <p className="text-sm font-semibold">Within 24 - 48 Hours</p>
                     <p className="text-[11px] text-emerald-200/70 mt-0.5">All inbox queries are tracked and answered</p>
                   </div>
                 </div>

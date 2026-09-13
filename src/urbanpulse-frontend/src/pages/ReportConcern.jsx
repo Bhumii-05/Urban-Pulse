@@ -71,7 +71,7 @@ function parseCoordinates(loc) {
 }
 
 function formatLocationText(loc) {
-  if (!loc) return "â€”";
+  if (!loc) return "-";
   if (typeof loc === "string") return loc;
   const lat = loc.latitude ?? loc.lat;
   const lng = loc.longitude ?? loc.lng;
@@ -201,7 +201,7 @@ export default function ReportConcern() {
   const submitLabel = useMemo(() => {
     if (stage === STAGE.CREATING) return "Creating Concern...";
     if (stage === STAGE.UPLOADING) return "Uploading Evidence...";
-    if (stage === STAGE.SUCCESS) return "Concern Submitted âœ“";
+    if (stage === STAGE.SUCCESS) return "Concern Submitted ✓";
     if (stage === STAGE.IMAGE_ERROR) return "Retry Evidence Upload";
     return "Submit Concern";
   }, [stage]);
@@ -237,7 +237,7 @@ export default function ReportConcern() {
                 label="Location"
                 value={formatLocationText(concern.location)}
               />
-              <Row label="Evidence" value="Uploaded âœ“" />
+              <Row label="Evidence" value="Uploaded ✓" />
               <Row label="Status" value="Open" />
             </dl>
 
@@ -380,7 +380,7 @@ export default function ReportConcern() {
               className="rounded-xl bg-amber-50 px-4 py-2.5 text-sm text-amber-800"
             >
               Concern created, but evidence upload failed. Your concern (#
-              {concern?.id || concern?._id}) was saved â€” use the button below to
+              {concern?.id || concern?._id}) was saved - use the button below to
               retry the photo upload.
             </p>
           )}
@@ -414,4 +414,3 @@ function Row({ label, value }) {
     </div>
   );
 }
-
