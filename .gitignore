@@ -234,3 +234,8 @@ pnpm-debug.log*
 
 # Frontend build files
 dist/
+
+# UrbanPulse chatbot generated data
+src/urbanpulse-chatbot/data/chroma/
+src/urbanpulse-chatbot/data/uploads/
+src/urbanpulse-chatbot/data/urban_pulse.db
