@@ -1,3 +1,10 @@
+﻿/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant, Sneha Kesharwani
+ * Date of Last Modification: 13 September 2026
+ * Brief Description: Displays information about the UrbanPulse initiative and project contributors.
+ */
 import { motion } from "framer-motion";
 import {
   Leaf,

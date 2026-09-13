@@ -1,3 +1,10 @@
+﻿/**
+ * Project Name: UrbanPulse
+ * Group Name: Vision Crafters
+ * Author(s): Ashish Pant, Sneha Kesharwani
+ * Date of Last Modification: 13 September 2026
+ * Brief Description: Provides the main UrbanPulse landing page.
+ */
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import AboutUs from "../components/AboutUs";
@@ -36,9 +43,9 @@ export default function Home() {
       {/* 6. Co-Branded Footer Signature */}
       <footer className="w-full border-t border-slate-200 bg-white py-5 px-4 mt-auto">
         <div className="mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center text-xs text-slate-500">
-          <span>© 2026 UrbanPulse. All rights reserved.</span>
+          <span>Â© 2026 UrbanPulse. All rights reserved.</span>
           
-          <span className="hidden sm:inline text-slate-300">•</span>
+          <span className="hidden sm:inline text-slate-300">â€¢</span>
 
           <div className="flex items-center gap-2">
             <span className="text-slate-400">Developed under</span>
@@ -62,3 +69,4 @@ export default function Home() {
     </div>
   );
 }
+
