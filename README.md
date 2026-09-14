@@ -1,6 +1,6 @@
 # Project Declaration
 
-## 2. Project Identification & Declaration
+## 1. Project Identification & Declaration
 
 ### Project Information
 
