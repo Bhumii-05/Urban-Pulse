@@ -1,8 +1,8 @@
 ﻿/**
  * Project Name: UrbanPulse
  * Group Name: Vision Crafters
- * Author(s):Sneha Kesharwani
- * Date of Last Modification: 13 September 2026
+ * Author(s): Sneha Kesharwani
+ * Date of Last Modification: 14 September 2026
  * Brief Description: Provides the interface for viewing and updating user profile information.
  */
 import React, { useState, useEffect, useCallback } from "react";
@@ -37,7 +37,7 @@ import { profileService } from "../api/profile.service";
 import { notificationService } from "../api/notification.service";
 
 /* ------------------------------------------------------------------ */
-/*  Theme tokens                                                       */
+/*  Theme tokens                                                      */
 /* ------------------------------------------------------------------ */
 
 const COLORS = {
@@ -58,7 +58,7 @@ const NAV_ITEMS = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Helpers                                                             */
+/*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
 function getInitials(name) {
@@ -70,9 +70,9 @@ function getInitials(name) {
 }
 
 function formatMemberSince(dateStr) {
-  if (!dateStr) return "â€”";
+  if (!dateStr) return "-";
   const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return "â€”";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
@@ -91,7 +91,7 @@ function getPasswordChecks(password) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Small presentational pieces                                        */
+/*  Small presentational pieces                                       */
 /* ------------------------------------------------------------------ */
 
 function EcoSkyline() {
@@ -374,7 +374,7 @@ function FieldRow({ icon: Icon, label, value, editable, inputValue, onChange }) 
         />
       ) : (
         <div className="flex-1 text-sm font-medium" style={{ color: COLORS.ink }}>
-          {value || "â€”"}
+          {value || "-"}
         </div>
       )}
     </div>
@@ -419,7 +419,7 @@ function ProfileInfoCard({ profile, editMode, draft, saving, onEdit, onCancel, o
             >
               {saving ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Savingâ€¦
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
                 </>
               ) : (
                 <>
@@ -620,7 +620,7 @@ function ChangePasswordCard({ values, show, onToggleShow, onChange, onSubmit, su
         >
           {submitting ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" /> Updatingâ€¦
+              <Loader2 className="w-4 h-4 animate-spin" /> Updating...
             </>
           ) : (
             "Update Password"
@@ -735,7 +735,7 @@ function Toast({ type, message }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main component                                                      */
+/*  Main component                                                    */
 /* ------------------------------------------------------------------ */
 
 export default function Profile() {
@@ -834,7 +834,7 @@ export default function Profile() {
   };
 
   const handlePhotoClick = () => pushToast("success", "Photo upload is coming soon.");
-  const handleContactSupport = () => pushToast("success", "Support request noted â€” we'll be in touch.");
+  const handleContactSupport = () => pushToast("success", "Support request noted - we'll be in touch.");
   
   const handleNavigate = (label) => {
     setSidebarOpen(false);
@@ -910,7 +910,6 @@ export default function Profile() {
       `}</style>
 
       <div className="up-profile-root">
-        {/* Mobile backdrop */}
         {sidebarOpen && (
           <div
             onClick={() => setSidebarOpen(false)}
@@ -925,12 +924,11 @@ export default function Profile() {
           onClose={() => setSidebarOpen(false)}
           onNavigate={handleNavigate}
           onLogout={handleLogout}
-          userName={profile ? profile.full_name : "Loadingâ€¦"}
+          userName={profile ? profile.full_name : "Loading..."}
           userEmail={profile ? profile.email : ""}
         />
 
         <div className={`transition-all duration-300 ease-in-out ${sidebarOpen ? "md:ml-72" : "md:ml-0"}`}>
-          {/* Utility bar: hamburger menu toggle */}
           <div
             className="sticky top-0 z-20 backdrop-blur-md"
             style={{

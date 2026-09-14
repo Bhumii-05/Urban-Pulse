@@ -660,7 +660,7 @@ export default function RouteManagement({
                                     Number(lat).toFixed(4),
                                     Number(lng).toFixed(4)
                                   )
-                                : "â€”"}
+                                : "-"}
                             </p>
                           </div>
                         </div>

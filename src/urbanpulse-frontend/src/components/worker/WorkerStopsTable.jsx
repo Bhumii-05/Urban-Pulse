@@ -2,7 +2,7 @@
  * Project Name: UrbanPulse
  * Group Name: Vision Crafters
  * Author(s): Ashish Pant
- * Date of Last Modification: 13 September 2026
+ * Date of Last Modification: 14 September 2026
  * Brief Description: Displays collection stops and their associated assignment information.
  */
 import React from "react";
@@ -22,9 +22,8 @@ import {
 function cleanText(text) {
   if (!text || typeof text !== "string") return "";
   return text
-    .replace(/â€“|â€”/g, "-")
-    .replace(/â€¦/g, "...")
-    .replace(/[â]/g, "")
+    .replace(/[\u2013\u2014]|â€“|â€”/g, "-")
+    .replace(/[\u2026]|â€¦/g, "...")
     .trim();
 }
 
@@ -62,7 +61,7 @@ export default function WorkerStopsTable({
 }) {
   const handleOpenGoogleMaps = (coords, locationName) => {
     const cleanLocation = cleanText(locationName);
-    if (coords && coords.lat && coords.lng) {
+    if (coords && coords.lat != null && coords.lng != null) {
       window.open(
         `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`,
         "_blank"

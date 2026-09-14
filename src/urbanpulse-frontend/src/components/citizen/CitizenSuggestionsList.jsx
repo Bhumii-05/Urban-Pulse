@@ -25,9 +25,9 @@ function toTitleCase(value) {
 }
 
 function formatDate(isoString) {
-  if (!isoString) return "â€”";
+  if (!isoString) return "-”";
   const date = new Date(isoString);
-  if (Number.isNaN(date.getTime())) return "â€”";
+  if (Number.isNaN(date.getTime())) return "-”";
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
@@ -107,7 +107,7 @@ export default function CitizenSuggestionsList({
                             Number(suggestion.latitude).toFixed(4),
                             Number(suggestion.longitude).toFixed(4),
                           )
-                        : "â€”")}
+                        : "-”")}
                   </p>
                   <p className="mt-2 text-xs text-slate-400">
                     Submitted {formatDate(suggestion.created_at)}

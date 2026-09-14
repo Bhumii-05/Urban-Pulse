@@ -24,10 +24,10 @@ function parseCoordinates(loc) {
 }
 
 function formatLocation(loc) {
-  if (!loc) return "â€”";
+  if (!loc) return "-”";
   const coords = parseCoordinates(loc);
   if (coords) return coordsToLocationString(coords.lat.toFixed(4), coords.lng.toFixed(4));
-  if (typeof loc === "object") return loc.address || loc.name || "â€”";
+  if (typeof loc === "object") return loc.address || loc.name || "-”";
   return String(loc);
 }
 
