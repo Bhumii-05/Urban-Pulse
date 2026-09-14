@@ -332,7 +332,7 @@ export default function SuggestionManagement({ fireToast, onImportToRoute }) {
                 <div className="flex items-center gap-2 text-[11px] text-gray-500 bg-gray-50 p-2 rounded-xl mb-4 font-mono">
                   <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                   <span>
-                    Lat: {coords.lat || "â€”"}, Lng: {coords.lng || "â€”"}
+                    Lat: {coords.lat || "-”"}, Lng: {coords.lng || "-”"}
                   </span>
                 </div>
               </div>
